@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore, AVATARS } from '../stores/auth'
+import { useAuthStore, AVATAR_PRESETS } from '../stores/auth'
 import AuthShell from '../components/AuthShell.vue'
 
 const router = useRouter()
@@ -12,7 +12,7 @@ const username = ref('')
 const nickname = ref('')
 const password = ref('')
 const confirm = ref('')
-const avatar = ref(AVATARS[2])
+const avatarIndex = ref(0)
 const agreed = ref(false)
 const error = ref('')
 const loading = ref(false)
@@ -29,12 +29,14 @@ async function submit() {
   }
   loading.value = true
   try {
-    await new Promise((r) => setTimeout(r, 350))
+    await new Promise((r) => setTimeout(r, 320))
+    const preset = AVATAR_PRESETS[avatarIndex.value]
     auth.register({
       username: username.value,
       nickname: nickname.value,
       password: password.value,
-      avatar: avatar.value
+      avatar: preset.char,
+      avatarColor: preset.color
     })
     router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
   } catch (e) {
@@ -47,114 +49,67 @@ async function submit() {
 
 <template>
   <AuthShell mode="register">
-    <header class="head">
-      <h2 class="font-display">创建账号</h2>
-      <p>一分钟加入 AI 学习者社区</p>
-    </header>
-
     <form class="form" @submit.prevent="submit">
       <div class="field">
-        <span class="field__label">选择社区头像</span>
+        <span class="label">头像</span>
         <div class="avatars">
           <button
-            v-for="a in AVATARS"
-            :key="a"
+            v-for="(preset, i) in AVATAR_PRESETS"
+            :key="preset.char"
             type="button"
             class="avatar"
-            :class="{ 'avatar--active': avatar === a }"
-            :aria-label="`选择头像 ${a}`"
-            @click="avatar = a"
+            :class="{ 'avatar--on': avatarIndex === i }"
+            :style="{ background: preset.color }"
+            :aria-label="`选择头像 ${preset.char}`"
+            @click="avatarIndex = i"
           >
-            {{ a }}
+            {{ preset.char }}
           </button>
         </div>
       </div>
 
       <div class="row">
         <label class="field">
-          <span class="field__label">用户名</span>
-          <div class="field__box">
-            <input
-              v-model="username"
-              type="text"
-              autocomplete="username"
-              placeholder="3~20 位字母数字"
-            />
-          </div>
+          <input v-model="username" type="text" autocomplete="username" placeholder="用户名" />
         </label>
         <label class="field">
-          <span class="field__label">昵称</span>
-          <div class="field__box">
-            <input v-model="nickname" type="text" placeholder="社区怎么称呼你" />
-          </div>
+          <input v-model="nickname" type="text" placeholder="昵称" />
         </label>
       </div>
 
       <label class="field">
-        <span class="field__label">密码</span>
-        <div class="field__box">
-          <input
-            v-model="password"
-            type="password"
-            autocomplete="new-password"
-            placeholder="至少 6 位"
-          />
-        </div>
+        <input
+          v-model="password"
+          type="password"
+          autocomplete="new-password"
+          placeholder="密码（至少 6 位）"
+        />
       </label>
 
       <label class="field">
-        <span class="field__label">确认密码</span>
-        <div class="field__box">
-          <input
-            v-model="confirm"
-            type="password"
-            autocomplete="new-password"
-            placeholder="再次输入密码"
-          />
-        </div>
+        <input
+          v-model="confirm"
+          type="password"
+          autocomplete="new-password"
+          placeholder="确认密码"
+        />
       </label>
 
       <label class="agree">
         <input v-model="agreed" type="checkbox" />
-        <span>我已阅读并同意《社区公约》:友善交流、乐于分享、尊重原创</span>
+        <span>同意《社区公约》：友善交流、乐于分享、尊重原创</span>
       </label>
 
       <p v-if="error" class="error">{{ error }}</p>
 
-      <button type="submit" class="submit" :disabled="loading">
-        <span v-if="loading" class="spinner"></span>
-        {{ loading ? '注册中…' : '注册并加入社区' }}
+      <button type="submit" class="btn-primary" :disabled="loading">
+        {{ loading ? '注册中…' : '注册' }}
       </button>
     </form>
-
-    <p class="switch">
-      已有账号?
-      <router-link :to="{ path: '/login', query: route.query }">直接登录</router-link>
-      <span class="switch__dot">·</span>
-      <router-link :to="{ path: '/login', query: route.query }">游客体验</router-link>
-    </p>
   </AuthShell>
 </template>
 
 <style scoped>
-.head {
-  margin-bottom: 24px;
-}
-
-.head h2 {
-  margin: 0 0 6px;
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  color: #0f172a;
-}
-
-.head p {
-  margin: 0;
-  font-size: 14px;
-  color: #64748b;
-}
-
 .form {
   display: flex;
   flex-direction: column;
@@ -164,7 +119,7 @@ async function submit() {
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
 }
 
 .field {
@@ -174,42 +129,33 @@ async function submit() {
   min-width: 0;
 }
 
-.field__label {
+.label {
   font-size: 13px;
-  font-weight: 600;
-  color: #334155;
+  color: #646464;
 }
 
-.field__box {
-  display: flex;
-  align-items: center;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 14px;
-  background: #f8fafc;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-}
-
-.field__box:focus-within {
-  border-color: #6366f1;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
-}
-
-.field__box input {
+.field input {
   width: 100%;
-  border: none;
-  outline: none;
-  background: transparent;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e3e6eb;
+  border-radius: 4px;
+  background: #fafbfc;
   font: inherit;
   font-size: 14.5px;
-  color: #0f172a;
-  padding: 12px 0;
+  color: #121212;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.field__box input::placeholder {
-  color: #94a3b8;
+.field input::placeholder {
+  color: #b0b6c0;
+}
+
+.field input:focus {
+  border-color: #1772f6;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(23, 114, 246, 0.12);
 }
 
 .avatars {
@@ -219,28 +165,23 @@ async function submit() {
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  border: 1.5px solid #e2e8f0;
+  width: 36px;
+  height: 36px;
+  border: 2px solid transparent;
   border-radius: 50%;
-  background: #f8fafc;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
 .avatar:hover {
-  transform: translateY(-2px);
-  border-color: #a5b4fc;
+  transform: translateY(-1px);
 }
 
-.avatar--active {
-  border-color: #6366f1;
-  background: #eef2ff;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+.avatar--on {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1772f6;
 }
 
 .agree {
@@ -248,81 +189,42 @@ async function submit() {
   align-items: flex-start;
   gap: 8px;
   font-size: 12.5px;
-  color: #64748b;
-  line-height: 1.6;
+  color: #8590a6;
+  line-height: 1.55;
   cursor: pointer;
 }
 
 .agree input {
-  margin-top: 3px;
-  accent-color: #6366f1;
+  margin-top: 2px;
+  accent-color: #1772f6;
 }
 
 .error {
   margin: 0;
-  padding: 11px 14px;
-  border-radius: 12px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
   font-size: 13px;
+  color: #e11d48;
 }
 
-.submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 50px;
+.btn-primary {
+  margin-top: 2px;
+  height: 44px;
   border: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 4px;
+  background: #1772f6;
   color: #fff;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.28);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.15s ease;
 }
 
-.submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.34);
+.btn-primary:hover:not(:disabled) {
+  background: #0f62e6;
 }
 
-.submit:disabled {
+.btn-primary:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-
-.switch {
-  margin: 20px 0 0;
-  text-align: center;
-  font-size: 13.5px;
-  color: #64748b;
-}
-
-.switch a {
-  font-weight: 700;
-  color: #4f46e5;
-}
-
-.switch__dot {
-  margin: 0 6px;
-  color: #cbd5e1;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 480px) {

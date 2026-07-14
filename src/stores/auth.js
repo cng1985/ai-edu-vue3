@@ -6,7 +6,17 @@ import { defineStore } from 'pinia'
 const USERS_KEY = 'ai-learning-system:users'
 const SESSION_KEY = 'ai-learning-system:session'
 
-export const AVATARS = ['🧑‍💻', '👩‍💻', '🦊', '🐼', '🦉', '🐯', '🚀', '🤖', '🐱', '🌟']
+/** 社区字母头像配色（替代 emoji，更接近知乎/掘金常见样式） */
+export const AVATAR_PRESETS = [
+  { char: 'A', color: '#1772f6' },
+  { char: 'B', color: '#0ea5e9' },
+  { char: 'C', color: '#10b981' },
+  { char: 'D', color: '#f59e0b' },
+  { char: 'E', color: '#ef4444' },
+  { char: 'F', color: '#8b5cf6' },
+  { char: 'G', color: '#14b8a6' },
+  { char: 'H', color: '#f97316' }
+]
 
 function loadUsers() {
   try {
@@ -28,7 +38,6 @@ function loadSession() {
   return null
 }
 
-// 演示用途的简易散列,避免明文存储;生产环境必须由后端完成密码处理
 function hash(text) {
   let h = 5381
   for (let i = 0; i < text.length; i++) {
@@ -48,7 +57,7 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    register({ username, nickname, password, avatar }) {
+    register({ username, nickname, password, avatar, avatarColor }) {
       username = username.trim()
       nickname = nickname.trim()
 
@@ -64,11 +73,13 @@ export const useAuthStore = defineStore('auth', {
         throw new Error('该用户名已被注册')
       }
 
+      const preset = AVATAR_PRESETS[0]
       const user = {
         id: 'u' + Date.now().toString(36),
         username,
         nickname,
-        avatar: avatar || AVATARS[0],
+        avatar: avatar || preset.char,
+        avatarColor: avatarColor || preset.color,
         passwordHash: hash(password),
         isGuest: false,
         joinedAt: Date.now()
@@ -91,14 +102,14 @@ export const useAuthStore = defineStore('auth', {
       return user
     },
 
-    /** 游客登录:无需账号密码,创建临时会话,可立即体验全部功能 */
     loginAsGuest() {
       const stamp = Date.now().toString(36).slice(-4)
       const user = {
         id: 'guest-' + Date.now().toString(36),
         username: 'guest_' + stamp,
         nickname: '游客',
-        avatar: '👋',
+        avatar: '访',
+        avatarColor: '#94a3b8',
         isGuest: true,
         joinedAt: Date.now()
       }
@@ -107,7 +118,6 @@ export const useAuthStore = defineStore('auth', {
     },
 
     setSession(user) {
-      // 会话中不保留密码散列
       const { passwordHash, ...safe } = user
       this.user = safe
       localStorage.setItem(SESSION_KEY, JSON.stringify(safe))
