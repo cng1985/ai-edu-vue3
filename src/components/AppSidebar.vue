@@ -1,13 +1,23 @@
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useLearningStore } from '../stores/learning'
+import { useAuthStore } from '../stores/auth'
 
 defineProps({
   open: { type: Boolean, default: false }
 })
-defineEmits(['navigate'])
+const emit = defineEmits(['navigate'])
 
+const router = useRouter()
 const learning = useLearningStore()
+const auth = useAuthStore()
+
+function logout() {
+  auth.logout()
+  emit('navigate')
+  router.replace('/login')
+}
 
 const navItems = [
   { to: '/', icon: '🏠', label: '学习中心', exact: true },
@@ -52,6 +62,15 @@ const progress = computed(() => learning.overallProgress)
       </div>
       <div class="sidebar__progress-track">
         <div class="sidebar__progress-fill" :style="{ width: progress + '%' }"></div>
+      </div>
+
+      <div v-if="auth.user" class="sidebar__user">
+        <span class="sidebar__user-avatar">{{ auth.user.avatar }}</span>
+        <div class="sidebar__user-info">
+          <strong>{{ auth.user.nickname }}</strong>
+          <span>@{{ auth.user.username }}</span>
+        </div>
+        <button class="sidebar__logout" title="退出登录" @click="logout">⎋</button>
       </div>
     </div>
   </aside>
@@ -151,6 +170,69 @@ const progress = computed(() => learning.overallProgress)
   background: linear-gradient(90deg, var(--primary), #a78bfa);
   border-radius: 999px;
   transition: width 0.4s ease;
+}
+
+.sidebar__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 9px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.sidebar__user-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: var(--primary-soft);
+  border-radius: 50%;
+}
+
+.sidebar__user-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.sidebar__user-info strong {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__user-info span {
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__logout {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar__logout:hover {
+  background: #fef2f2;
+  color: var(--danger);
 }
 
 @media (max-width: 860px) {

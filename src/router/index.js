@@ -1,6 +1,19 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const routes = [
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/LoginView.vue'),
+    meta: { title: '登录', public: true, blank: true }
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('../views/RegisterView.vue'),
+    meta: { title: '注册', public: true, blank: true }
+  },
   {
     path: '/',
     name: 'home',
@@ -60,6 +73,17 @@ const router = createRouter({
   routes,
   scrollBehavior() {
     return { top: 0 }
+  }
+})
+
+router.beforeEach((to) => {
+  const auth = useAuthStore()
+  if (!to.meta.public && !auth.isLoggedIn) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  // 已登录用户访问登录/注册页时直接回首页
+  if (to.meta.public && auth.isLoggedIn) {
+    return { path: '/' }
   }
 })
 
