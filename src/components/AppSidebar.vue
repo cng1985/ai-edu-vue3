@@ -1,0 +1,166 @@
+<script setup>
+import { computed } from 'vue'
+import { useLearningStore } from '../stores/learning'
+
+defineProps({
+  open: { type: Boolean, default: false }
+})
+defineEmits(['navigate'])
+
+const learning = useLearningStore()
+
+const navItems = [
+  { to: '/', icon: '🏠', label: '学习中心', exact: true },
+  { to: '/courses', icon: '📚', label: '全部课程' },
+  { to: '/chat', icon: '💬', label: 'AI 学习助手' },
+  { to: '/quiz', icon: '📝', label: '知识测验' },
+  { to: '/stats', icon: '📊', label: '学习统计' }
+]
+
+const progress = computed(() => learning.overallProgress)
+</script>
+
+<template>
+  <aside class="sidebar" :class="{ 'sidebar--open': open }">
+    <router-link to="/" class="sidebar__brand" @click="$emit('navigate')">
+      <span class="sidebar__logo">🧠</span>
+      <span class="sidebar__title">AI 学习系统</span>
+    </router-link>
+
+    <nav class="sidebar__nav">
+      <router-link
+        v-for="item in navItems"
+        :key="item.to"
+        :to="item.to"
+        class="sidebar__link"
+        :class="{
+          'sidebar__link--active': item.exact
+            ? $route.path === item.to
+            : $route.path.startsWith(item.to)
+        }"
+        @click="$emit('navigate')"
+      >
+        <span class="sidebar__icon">{{ item.icon }}</span>
+        <span>{{ item.label }}</span>
+      </router-link>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__progress-label">
+        <span>总体进度</span>
+        <strong>{{ progress }}%</strong>
+      </div>
+      <div class="sidebar__progress-track">
+        <div class="sidebar__progress-fill" :style="{ width: progress + '%' }"></div>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<style scoped>
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 14px;
+  z-index: 50;
+}
+
+.sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px 20px;
+  color: var(--text);
+}
+
+.sidebar__logo {
+  font-size: 26px;
+}
+
+.sidebar__title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.sidebar__link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: 14.5px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.sidebar__link:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.sidebar__link--active {
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-weight: 600;
+}
+
+.sidebar__icon {
+  font-size: 17px;
+  width: 22px;
+  text-align: center;
+}
+
+.sidebar__footer {
+  padding: 14px 10px 4px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar__progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.sidebar__progress-track {
+  height: 7px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sidebar__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #a78bfa);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+}
+</style>
