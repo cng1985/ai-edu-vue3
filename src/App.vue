@@ -1,12 +1,17 @@
 <script setup>
 import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import AppSidebar from './components/AppSidebar.vue'
 
+const route = useRoute()
 const sidebarOpen = ref(false)
 </script>
 
 <template>
-  <div class="layout">
+  <!-- 登录/注册等页面使用全屏空白布局 -->
+  <router-view v-if="route.meta.blank" />
+
+  <div v-else class="layout">
     <button class="layout__menu-btn" @click="sidebarOpen = !sidebarOpen" aria-label="切换菜单">
       ☰
     </button>

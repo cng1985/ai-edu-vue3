@@ -2,10 +2,12 @@
 import { computed } from 'vue'
 import { courses, getCourse, totalChapterCount } from '../data/courses'
 import { useLearningStore } from '../stores/learning'
+import { useAuthStore } from '../stores/auth'
 import CourseCard from '../components/CourseCard.vue'
 import ProgressRing from '../components/ProgressRing.vue'
 
 const learning = useLearningStore()
+const auth = useAuthStore()
 
 const continueTarget = computed(() => {
   const last = learning.lastVisited
@@ -32,7 +34,9 @@ const stats = computed(() => [
   <div class="page">
     <section class="hero card">
       <div class="hero__text">
-        <h1>欢迎来到 AI 学习系统</h1>
+        <h1>
+          {{ auth.user ? `${auth.user.avatar} 欢迎回来,${auth.user.nickname}` : '欢迎来到 AI 学习系统' }}
+        </h1>
         <p>
           从提示词工程到 AI 原生架构的系统化学习平台。跟随课程循序渐进，
           配合 AI 学习助手答疑与章节测验巩固，完成从"写代码"到"调度智能"的跃迁。

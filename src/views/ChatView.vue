@@ -1,9 +1,11 @@
 <script setup>
 import { ref, nextTick, watch, onMounted } from 'vue'
 import { useChatStore } from '../stores/chat'
+import { useAuthStore } from '../stores/auth'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 
 const chat = useChatStore()
+const auth = useAuthStore()
 const input = ref('')
 const scrollArea = ref(null)
 
@@ -77,7 +79,9 @@ onMounted(scrollToBottom)
         class="chat__row"
         :class="`chat__row--${msg.role}`"
       >
-        <div class="chat__avatar">{{ msg.role === 'user' ? '🧑‍💻' : '🤖' }}</div>
+        <div class="chat__avatar">
+          {{ msg.role === 'user' ? auth.user?.avatar || '🧑‍💻' : '🤖' }}
+        </div>
         <div class="chat__bubble" :class="`chat__bubble--${msg.role}`">
           <template v-if="msg.role === 'assistant'">
             <div v-if="msg.streaming && !msg.text" class="chat__thinking">
