@@ -67,11 +67,24 @@ const progress = computed(() => learning.overallProgress)
       <div v-if="auth.user" class="sidebar__user">
         <span class="sidebar__user-avatar">{{ auth.user.avatar }}</span>
         <div class="sidebar__user-info">
-          <strong>{{ auth.user.nickname }}</strong>
-          <span>@{{ auth.user.username }}</span>
+          <strong>
+            {{ auth.user.nickname }}
+            <em v-if="auth.isGuest" class="sidebar__guest-badge">游客</em>
+          </strong>
+          <span>{{ auth.isGuest ? '临时体验账号' : '@' + auth.user.username }}</span>
         </div>
-        <button class="sidebar__logout" title="退出登录" @click="logout">⎋</button>
+        <button class="sidebar__logout" :title="auth.isGuest ? '结束体验' : '退出登录'" @click="logout">
+          ⎋
+        </button>
       </div>
+      <router-link
+        v-if="auth.isGuest"
+        to="/register"
+        class="sidebar__upgrade"
+        @click="$emit('navigate')"
+      >
+        注册账号,保存学习进度 →
+      </router-link>
     </div>
   </aside>
 </template>
@@ -208,6 +221,20 @@ const progress = computed(() => learning.overallProgress)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar__guest-badge {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  flex-shrink: 0;
 }
 
 .sidebar__user-info span {
@@ -233,6 +260,23 @@ const progress = computed(() => learning.overallProgress)
 .sidebar__logout:hover {
   background: #fef2f2;
   color: var(--danger);
+}
+
+.sidebar__upgrade {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: background 0.15s ease;
+}
+
+.sidebar__upgrade:hover {
+  background: #e0e7ff;
 }
 
 @media (max-width: 860px) {

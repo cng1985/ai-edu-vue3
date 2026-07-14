@@ -43,7 +43,8 @@ export const useAuthStore = defineStore('auth', {
   }),
 
   getters: {
-    isLoggedIn: (state) => Boolean(state.user)
+    isLoggedIn: (state) => Boolean(state.user),
+    isGuest: (state) => Boolean(state.user?.isGuest)
   },
 
   actions: {
@@ -69,6 +70,7 @@ export const useAuthStore = defineStore('auth', {
         nickname,
         avatar: avatar || AVATARS[0],
         passwordHash: hash(password),
+        isGuest: false,
         joinedAt: Date.now()
       }
       users.push(user)
@@ -84,6 +86,21 @@ export const useAuthStore = defineStore('auth', {
       )
       if (!user || user.passwordHash !== hash(password)) {
         throw new Error('用户名或密码错误')
+      }
+      this.setSession(user)
+      return user
+    },
+
+    /** 游客登录:无需账号密码,创建临时会话,可立即体验全部功能 */
+    loginAsGuest() {
+      const stamp = Date.now().toString(36).slice(-4)
+      const user = {
+        id: 'guest-' + Date.now().toString(36),
+        username: 'guest_' + stamp,
+        nickname: '游客',
+        avatar: '👋',
+        isGuest: true,
+        joinedAt: Date.now()
       }
       this.setSession(user)
       return user

@@ -35,7 +35,13 @@ const stats = computed(() => [
     <section class="hero card">
       <div class="hero__text">
         <h1>
-          {{ auth.user ? `${auth.user.avatar} 欢迎回来,${auth.user.nickname}` : '欢迎来到 AI 学习系统' }}
+          {{
+            auth.user
+              ? auth.isGuest
+                ? `${auth.user.avatar} 你好,游客`
+                : `${auth.user.avatar} 欢迎回来,${auth.user.nickname}`
+              : '欢迎来到 AI 学习系统'
+          }}
         </h1>
         <p>
           从提示词工程到 AI 原生架构的系统化学习平台。跟随课程循序渐进，
