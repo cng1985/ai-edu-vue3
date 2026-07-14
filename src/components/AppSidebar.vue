@@ -65,7 +65,12 @@ const progress = computed(() => learning.overallProgress)
       </div>
 
       <div v-if="auth.user" class="sidebar__user">
-        <span class="sidebar__user-avatar">{{ auth.user.avatar }}</span>
+        <span
+          class="sidebar__user-avatar"
+          :style="{ background: auth.user.avatarColor || '#1772f6', color: '#fff' }"
+        >
+          {{ auth.user.avatar }}
+        </span>
         <div class="sidebar__user-info">
           <strong>
             {{ auth.user.nickname }}
@@ -203,8 +208,8 @@ const progress = computed(() => learning.overallProgress)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  background: var(--primary-soft);
+  font-size: 13px;
+  font-weight: 700;
   border-radius: 50%;
 }
 

@@ -38,8 +38,8 @@ const stats = computed(() => [
           {{
             auth.user
               ? auth.isGuest
-                ? `${auth.user.avatar} 你好,游客`
-                : `${auth.user.avatar} 欢迎回来,${auth.user.nickname}`
+                ? '你好，游客'
+                : `欢迎回来，${auth.user.nickname}`
               : '欢迎来到 AI 学习系统'
           }}
         </h1>

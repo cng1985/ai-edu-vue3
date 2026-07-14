@@ -79,8 +79,20 @@ onMounted(scrollToBottom)
         class="chat__row"
         :class="`chat__row--${msg.role}`"
       >
-        <div class="chat__avatar">
-          {{ msg.role === 'user' ? auth.user?.avatar || '🧑‍💻' : '🤖' }}
+        <div
+          class="chat__avatar"
+          :class="{ 'chat__avatar--user': msg.role === 'user' }"
+          :style="
+            msg.role === 'user'
+              ? {
+                  background: auth.user?.avatarColor || '#1772f6',
+                  color: '#fff',
+                  borderColor: 'transparent'
+                }
+              : undefined
+          "
+        >
+          {{ msg.role === 'user' ? auth.user?.avatar || '我' : 'AI' }}
         </div>
         <div class="chat__bubble" :class="`chat__bubble--${msg.role}`">
           <template v-if="msg.role === 'assistant'">
@@ -237,7 +249,9 @@ onMounted(scrollToBottom)
   border-radius: 50%;
   background: var(--surface);
   border: 1px solid var(--border);
-  font-size: 17px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1772f6;
 }
 
 .chat__bubble {
