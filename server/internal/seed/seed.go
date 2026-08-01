@@ -44,7 +44,7 @@ func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *re
 
 	fmt.Println("📦 首次启动，正在初始化数据...")
 	now := time.Now().UnixMilli()
-	contentDir := filepath.Join("..", "src", "data", "content")
+	contentDir := filepath.Join("..", "front", "app", "src", "data", "content")
 
 	adminHash, _ := authutil.HashPassword("admin123")
 	reviewerHash, _ := authutil.HashPassword("review123")

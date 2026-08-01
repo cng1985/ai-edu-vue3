@@ -70,26 +70,26 @@ npm run dev
 ### 目录结构
 
 ```
+front/
+├── app/               PC 应用端（Vue3 + Vite，学习者）
+│   ├── src/
+│   │   ├── views/     登录、首页、课程、AI 助手、测验等
+│   │   ├── stores/    Pinia 状态
+│   │   └── data/      课程 Markdown 与静态数据
+│   └── package.json
+└── admin/             PC 管理端（Vue3 + Element Plus）
+    ├── src/views/     登录、看板、用户、课程、题库、审核
+    └── package.json
+
 server/                Go API 服务（Fx + Gin + GORM）
 ├── cmd/server/        入口
-├── internal/
-│   ├── config/        配置
-│   ├── database/      GORM 初始化与迁移
-│   ├── model/         数据模型
-│   ├── repository/    数据访问层
-│   ├── service/       业务逻辑层
-│   ├── handler/       HTTP Handler
-│   ├── middleware/    JWT 认证与权限
-│   ├── router/        路由注册
-│   └── seed/          种子数据
-├── pkg/               公共工具（JWT、响应封装）
+├── internal/          配置、模型、仓储、服务、Handler、路由、种子
 └── data/              SQLite 数据库（运行时生成）
-
-admin/                 Vue3 + Element Plus 管理端
-├── src/views/         登录、看板、用户、课程、题库、审核
-├── src/layouts/       后台布局
-└── src/api/           API 封装
 ```
+
+## 接入真实大模型
+
+`front/app/src/utils/aiEngine.js` 中的 `ask(question, handlers)` 是 AI 助手的唯一入口，当前实现为本地知识库检索 + 模拟流式输出。若要接入真实 LLM API（如 OpenAI 兼容接口的 SSE 流式输出），只需替换该函数内部实现，保持 `onToken` / `onDone` 回调协议不变即可，界面层无需任何改动。
 
 ## 技术栈
 
@@ -106,17 +106,14 @@ admin/                 Vue3 + Element Plus 管理端
 ## 快速开始
 
 ```bash
-# 安装依赖
-npm install
+# 安装依赖（应用端 + 管理端）
+npm run install:all
 
-# 启动开发服务器（默认 http://localhost:5173）
+# 启动学习者应用端（http://localhost:5173）
 npm run dev
 
 # 生产构建
 npm run build
-
-# 预览构建产物
-npm run preview
 ```
 
 ## 目录结构
