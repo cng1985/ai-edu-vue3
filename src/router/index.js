@@ -18,7 +18,25 @@ const routes = [
     path: '/',
     name: 'home',
     component: () => import('../views/HomeView.vue'),
-    meta: { title: '学习中心' }
+    meta: { title: '学习驾驶舱' }
+  },
+  {
+    path: '/career',
+    name: 'career',
+    component: () => import('../views/CareerView.vue'),
+    meta: { title: 'AI 职业规划' }
+  },
+  {
+    path: '/path',
+    name: 'learning-path',
+    component: () => import('../views/LearningPathView.vue'),
+    meta: { title: '学习路径' }
+  },
+  {
+    path: '/micro/:unitId',
+    name: 'micro-unit',
+    component: () => import('../views/MicroUnitView.vue'),
+    meta: { title: '5 分钟微学习' }
   },
   {
     path: '/courses',

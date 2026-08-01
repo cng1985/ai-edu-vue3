@@ -4,11 +4,11 @@ import { courses, getCourse, totalChapterCount } from '../data/courses'
 import { communityPosts, leaderboard, hotTopics, dailyQuote } from '../data/community'
 import { useLearningStore } from '../stores/learning'
 import { useAuthStore } from '../stores/auth'
-import CourseCard from '../components/CourseCard.vue'
+import { useGrowthStore } from '../stores/growth'
 import ProgressRing from '../components/ProgressRing.vue'
 
-const learning = useLearningStore()
 const auth = useAuthStore()
+const growth = useGrowthStore()
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -112,6 +112,77 @@ const stats = computed(() => [
           </div>
           <div class="stat__label">{{ s.label }}</div>
         </div>
+        <router-link v-if="growth.nextUnit" :to="`/micro/${growth.nextUnit.id}`" class="btn btn--primary">▶ 开始今日学习</router-link>
+        <router-link v-else to="/path" class="btn btn--primary">查看已完成路径</router-link>
+      </section>
+
+      <section class="goal-card card">
+        <div class="goal-card__main">
+          <span class="tag">当前职业目标 · 进行中</span>
+          <h2>{{ growth.goal.name }}</h2>
+          <p>剩余 {{ daysLeft }} 天 · 每周 {{ growth.goal.weeklyHours }} 小时 · {{ growth.goal.baseLevel }}起步</p>
+          <div class="goal-progress"><div :style="{ width: growth.achievement + '%' }"></div></div>
+          <div class="goal-progress__labels">
+            <strong>总达成度 {{ growth.achievement }}%</strong>
+            <span>达标线 75%</span>
+          </div>
+          <div v-if="growth.nextMilestone" class="milestone">
+            <span>🏁 下一里程碑</span>
+            <strong>{{ growth.nextMilestone.name }}</strong>
+            <small>第 {{ growth.nextMilestone.week }} 周 · {{ growth.nextMilestone.standard }}</small>
+          </div>
+        </div>
+        <div class="goal-card__ring">
+          <ProgressRing :percent="growth.achievement" :size="130" :stroke="10" color="#fff" />
+          <router-link to="/career">调整目标 →</router-link>
+        </div>
+      </section>
+
+      <div class="dashboard-grid">
+        <section class="card panel competencies">
+          <div class="panel-head"><h2>能力域进度</h2><router-link to="/path">完整路径 →</router-link></div>
+          <div v-for="domain in growth.competencyProgress" :key="domain.id" class="competency">
+            <div><strong>{{ domain.name }}</strong><span>{{ domain.progress }}%</span></div>
+            <div class="bar"><div :style="{ width: domain.progress + '%', background: domain.color }"></div></div>
+          </div>
+        </section>
+
+        <section class="card panel">
+          <div class="panel-head"><h2>今日待办</h2><span>约 {{ growth.nextUnit ? growth.nextUnit.duration + 5 : 5 }} 分钟</span></div>
+          <div class="task-list">
+            <component
+              :is="task.to ? 'router-link' : 'button'"
+              v-for="(task, index) in todayTasks"
+              :key="task.title"
+              :to="task.to"
+              class="task"
+              :class="{ done: task.done }"
+              @click="task.action === 'checkin' && growth.checkIn()"
+            >
+              <span class="task__check">{{ task.done ? '✓' : index + 1 }}</span>
+              <span><strong>{{ task.title }}</strong><small>{{ task.meta }}</small></span>
+              <i>{{ task.done ? '已完成' : '›' }}</i>
+            </component>
+          </div>
+        </section>
+
+        <section class="card panel ai-panel">
+          <div class="panel-head"><h2>✨ AI 学习建议</h2><router-link to="/chat">继续追问</router-link></div>
+          <p v-if="growth.achievement === 0">先完成第一个 5 分钟微单元。一次只掌握一个小知识点，比浏览大量内容更有效。</p>
+          <p v-else>目前 <strong>{{ weakDomain?.name }}</strong> 达成度为 {{ weakDomain?.progress }}%，建议优先完成该能力域的微单元并通过快测。</p>
+          <div class="suggestion-tags"><span>基于达成度</span><span>今日可完成</span><span>动态路径</span></div>
+        </section>
+
+        <section class="card panel incentive">
+          <div class="panel-head"><h2>成长激励</h2><span>Lv{{ growth.level.number }}</span></div>
+          <div class="points"><strong>{{ growth.points }}</strong><span>当前积分 · {{ growth.level.name }}</span></div>
+          <div class="level-bar"><div :style="{ width: Math.min(100, growth.points / growth.level.next * 100) + '%' }"></div></div>
+          <p>距下一等级还需 {{ growth.level.next - growth.points }} 积分</p>
+          <div class="badges">
+            <span v-for="badge in growth.badges" :key="badge">🏅 {{ badge }}</span>
+            <span v-if="!growth.badges.length" class="muted">完成首个任务解锁勋章</span>
+          </div>
+        </section>
       </div>
     </section>
 
