@@ -2,26 +2,13 @@
   "name": "ai-learning-system",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "description": "基于 Vue3 + JavaScript 的 AI 学习系统",
+  "description": "AI 学习系统 monorepo",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "npm run dev --prefix front/app",
+    "build": "npm run build --prefix front/app",
+    "preview": "npm run preview --prefix front/app",
     "dev:server": "make -C server dev",
-    "dev:admin": "npm run dev --prefix admin",
-    "install:all": "npm install && npm install --prefix admin"
-  },
-  "dependencies": {
-    "highlight.js": "^11.11.1",
-    "marked": "^15.0.7",
-    "mermaid": "^11.6.0",
-    "pinia": "^3.0.2",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.3",
-    "vite": "^6.3.4"
+    "dev:admin": "npm run dev --prefix front/admin",
+    "install:all": "npm install --prefix front/app && npm install --prefix front/admin"
   }
 }
