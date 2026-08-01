@@ -19,6 +19,60 @@
 - **学习统计**：总体/分课程进度、近 7 天学习活跃度图表、测验成绩汇总与笔记一览
 - **数据持久化**:学习进度、笔记、测验成绩与对话记录均保存在浏览器 localStorage 中
 
+## 管理后台
+
+项目包含独立的 **PC 管理端** 与 **API 服务**，用于平台运营与内容管理。
+
+### 功能模块
+
+| 模块 | 说明 |
+| :--- | :--- |
+| 数据看板 | 用户、课程、题库、审核队列概览统计 |
+| 用户管理 | 学员/管理员/审核员/运营的增删改查与角色权限 |
+| 课程管理 | 课程与章节的 CRUD，支持 Markdown 编辑与预览 |
+| 题库管理 | 测验套题与单题的增删改查 |
+| 内容审核 | AI 预审 + 人工终审工作流（通过/驳回） |
+
+### 启动方式
+
+```bash
+# 安装全部依赖（应用端 + 服务端 + 管理端）
+npm run install:all
+
+# 初始化种子数据（首次启动服务端会自动执行）
+npm run seed
+
+# 终端 1：启动 API 服务（http://localhost:3001）
+npm run dev:server
+
+# 终端 2：启动管理端（http://localhost:5174）
+npm run dev:admin
+
+# 终端 3：启动学习者应用端（http://localhost:5173）
+npm run dev
+```
+
+### 演示账号
+
+| 角色 | 用户名 | 密码 |
+| :--- | :--- | :--- |
+| 管理员 | admin | admin123 |
+| 审核员 | reviewer | review123 |
+
+### 目录结构
+
+```
+server/                Express API 服务
+├── src/routes/        认证、用户、课程、题库、审核、看板
+├── src/seed.js        从应用端 Markdown 导入初始数据
+└── data/store.json    JSON 数据存储（运行时生成）
+
+admin/                 Vue3 + Element Plus 管理端
+├── src/views/         登录、看板、用户、课程、题库、审核
+├── src/layouts/       后台布局
+└── src/api/           API 封装
+```
+
 ## 技术栈
 
 | 类别 | 选型 |

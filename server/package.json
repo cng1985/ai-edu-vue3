@@ -1,0 +1,17 @@
+{
+  "name": "ai-learning-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI 学习系统后台 API 服务",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
