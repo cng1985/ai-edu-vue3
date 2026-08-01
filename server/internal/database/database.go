@@ -6,8 +6,8 @@ import (
 
 	"github.com/cng1985/ai-learning-server/internal/config"
 	"github.com/cng1985/ai-learning-server/internal/model"
+	"github.com/glebarez/sqlite"
 	"go.uber.org/fx"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
