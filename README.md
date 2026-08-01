@@ -36,13 +36,10 @@
 ### 启动方式
 
 ```bash
-# 安装全部依赖（应用端 + 服务端 + 管理端）
+# 安装依赖（应用端 + 管理端）
 npm run install:all
 
-# 初始化种子数据（首次启动服务端会自动执行）
-npm run seed
-
-# 终端 1：启动 API 服务（http://localhost:3001）
+# 终端 1：启动 Go API 服务（http://localhost:3001）
 npm run dev:server
 
 # 终端 2：启动管理端（http://localhost:5174）
@@ -51,6 +48,17 @@ npm run dev:admin
 # 终端 3：启动学习者应用端（http://localhost:5173）
 npm run dev
 ```
+
+### 后端技术栈
+
+| 类别 | 选型 |
+| :--- | :--- |
+| 语言 | Go 1.22 |
+| 依赖注入 | Uber Fx |
+| Web 框架 | Gin |
+| ORM | GORM |
+| 数据库 | SQLite（开发环境，可切换 MySQL） |
+| 认证 | JWT + bcrypt |
 
 ### 演示账号
 
@@ -62,10 +70,20 @@ npm run dev
 ### 目录结构
 
 ```
-server/                Express API 服务
-├── src/routes/        认证、用户、课程、题库、审核、看板
-├── src/seed.js        从应用端 Markdown 导入初始数据
-└── data/store.json    JSON 数据存储（运行时生成）
+server/                Go API 服务（Fx + Gin + GORM）
+├── cmd/server/        入口
+├── internal/
+│   ├── config/        配置
+│   ├── database/      GORM 初始化与迁移
+│   ├── model/         数据模型
+│   ├── repository/    数据访问层
+│   ├── service/       业务逻辑层
+│   ├── handler/       HTTP Handler
+│   ├── middleware/    JWT 认证与权限
+│   ├── router/        路由注册
+│   └── seed/          种子数据
+├── pkg/               公共工具（JWT、响应封装）
+└── data/              SQLite 数据库（运行时生成）
 
 admin/                 Vue3 + Element Plus 管理端
 ├── src/views/         登录、看板、用户、课程、题库、审核
