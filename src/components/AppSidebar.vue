@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useLearningStore } from '../stores/learning'
 import { useAuthStore } from '../stores/auth'
+import { useGrowthStore } from '../stores/growth'
 
 defineProps({
   open: { type: Boolean, default: false }
@@ -12,6 +13,7 @@ const emit = defineEmits(['navigate'])
 const router = useRouter()
 const learning = useLearningStore()
 const auth = useAuthStore()
+const growth = useGrowthStore()
 
 function logout() {
   auth.logout()
@@ -20,14 +22,16 @@ function logout() {
 }
 
 const navItems = [
-  { to: '/', icon: '🏠', label: '学习中心', exact: true },
+  { to: '/', icon: '🏠', label: '学习驾驶舱', exact: true },
+  { to: '/career', icon: '🧭', label: '职业与目标' },
+  { to: '/path', icon: '🗺️', label: '学习路径' },
   { to: '/courses', icon: '📚', label: '全部课程' },
   { to: '/chat', icon: '💬', label: 'AI 学习助手' },
   { to: '/quiz', icon: '📝', label: '知识测验' },
   { to: '/stats', icon: '📊', label: '学习统计' }
 ]
 
-const progress = computed(() => learning.overallProgress)
+const progress = computed(() => growth.hasGoal ? growth.achievement : learning.overallProgress)
 </script>
 
 <template>
@@ -57,7 +61,7 @@ const progress = computed(() => learning.overallProgress)
 
     <div class="sidebar__footer">
       <div class="sidebar__progress-label">
-        <span>总体进度</span>
+        <span>{{ growth.hasGoal ? '目标达成度' : '课程进度' }}</span>
         <strong>{{ progress }}%</strong>
       </div>
       <div class="sidebar__progress-track">
