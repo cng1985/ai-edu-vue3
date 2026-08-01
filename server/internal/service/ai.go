@@ -33,7 +33,7 @@ type knowledgeChunk struct {
 	courseID, courseTitle, chapterID, chapterTitle, heading, text string
 }
 
-func (s *AIService) Chat(ctx context.Context, question string, onToken func(string)) (*model.ChatResult, error) {
+func (s *AIService) Chat(ctx context.Context, question string, history []model.ChatMessage, onToken func(string)) (*model.ChatResult, error) {
 	question = strings.TrimSpace(question)
 	if question == "" {
 		return nil, fmt.Errorf("问题不能为空")
@@ -44,11 +44,12 @@ func (s *AIService) Chat(ctx context.Context, question string, onToken func(stri
 	}
 	matched, sources := retrieve(chunks, question, 3)
 	contextText := buildContext(matched)
-	systemPrompt := "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文。如果知识库中没有相关信息，请诚实说明。"
+	systemPrompt := "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文 Markdown。如果知识库中没有相关信息，请诚实说明，并给出学习建议。"
 	userPrompt := fmt.Sprintf("参考知识库：\n%s\n\n用户问题：%s", contextText, question)
 
 	if s.llm.Enabled() {
-		full, err := s.llm.StreamChat(ctx, systemPrompt, userPrompt, onToken)
+		messages := buildLLMMessages(systemPrompt, history, userPrompt)
+		full, err := s.llm.StreamMessages(ctx, messages, onToken)
 		if err != nil {
 			return nil, err
 		}
