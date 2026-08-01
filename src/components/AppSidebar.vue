@@ -25,10 +25,12 @@ const navItems = [
   { to: '/', icon: '🏠', label: '学习驾驶舱', exact: true },
   { to: '/career', icon: '🧭', label: '职业与目标' },
   { to: '/path', icon: '🗺️', label: '学习路径' },
+  { to: '/review', icon: '🔍', label: '复习与补强' },
   { to: '/courses', icon: '📚', label: '全部课程' },
   { to: '/chat', icon: '💬', label: 'AI 学习助手' },
   { to: '/quiz', icon: '📝', label: '知识测验' },
-  { to: '/stats', icon: '📊', label: '学习统计' }
+  { to: '/stats', icon: '📊', label: '达成度报告' },
+  { to: '/incentives', icon: '🏅', label: '成长激励' }
 ]
 
 const progress = computed(() => growth.hasGoal ? growth.achievement : learning.overallProgress)
@@ -136,6 +138,8 @@ const progress = computed(() => growth.hasGoal ? growth.achievement : learning.o
   flex-direction: column;
   gap: 4px;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .sidebar__link {

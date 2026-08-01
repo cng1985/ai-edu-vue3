@@ -39,6 +39,18 @@ const routes = [
     meta: { title: '5 分钟微学习' }
   },
   {
+    path: '/review',
+    name: 'review',
+    component: () => import('../views/ReviewView.vue'),
+    meta: { title: '复习与补强' }
+  },
+  {
+    path: '/incentives',
+    name: 'incentives',
+    component: () => import('../views/IncentiveView.vue'),
+    meta: { title: '成长激励' }
+  },
+  {
     path: '/courses',
     name: 'courses',
     component: () => import('../views/CoursesView.vue'),
