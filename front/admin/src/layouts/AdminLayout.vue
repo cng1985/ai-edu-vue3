@@ -29,6 +29,10 @@
           <el-icon><EditPen /></el-icon>
           <span>题库管理</span>
         </el-menu-item>
+        <el-menu-item v-if="auth.isAdmin" index="/roles">
+          <el-icon><Lock /></el-icon>
+          <span>权限管理</span>
+        </el-menu-item>
         <el-menu-item v-if="auth.isReviewer" index="/reviews">
           <el-icon><DocumentChecked /></el-icon>
           <span>内容审核</span>

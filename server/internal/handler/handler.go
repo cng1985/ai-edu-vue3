@@ -19,6 +19,9 @@ type Handlers struct {
 	Quizzes   *QuizHandler
 	Reviews   *ReviewHandler
 	Dashboard *DashboardHandler
+	AI        *AIHandler
+	RBAC      *RBACHandler
+	App       *AppHandler
 }
 
 type AuthHandler struct{ svc *service.AuthService }
@@ -31,8 +34,12 @@ type DashboardHandler struct{ svc *service.DashboardService }
 func NewHandlers(
 	auth *AuthHandler, users *UserHandler, courses *CourseHandler,
 	quizzes *QuizHandler, reviews *ReviewHandler, dashboard *DashboardHandler,
+	ai *AIHandler, rbac *RBACHandler, app *AppHandler,
 ) *Handlers {
-	return &Handlers{Auth: auth, Users: users, Courses: courses, Quizzes: quizzes, Reviews: reviews, Dashboard: dashboard}
+	return &Handlers{
+		Auth: auth, Users: users, Courses: courses, Quizzes: quizzes,
+		Reviews: reviews, Dashboard: dashboard, AI: ai, RBAC: rbac, App: app,
+	}
 }
 
 func NewAuthHandler(svc *service.AuthService) *AuthHandler       { return &AuthHandler{svc: svc} }
@@ -47,6 +54,7 @@ func NewDashboardHandler(svc *service.DashboardService) *DashboardHandler {
 var Module = fx.Provide(
 	NewAuthHandler, NewUserHandler, NewCourseHandler,
 	NewQuizHandler, NewReviewHandler, NewDashboardHandler,
+	NewAIHandler, NewRBACHandler, NewAppHandler,
 	NewHandlers,
 )
 
@@ -61,9 +69,11 @@ func failErr(c *gin.Context, err error) {
 	switch err.Error() {
 	case "用户名或密码错误":
 		code = http.StatusUnauthorized
-	case "账号已被禁用", "非管理端账号，无法登录", "无权限":
+	case "账号已被禁用", "无权限":
 		code = http.StatusForbidden
-	case "用户不存在", "课程不存在", "章节不存在", "测验不存在", "审核记录不存在":
+	case "该用户名已被注册":
+		code = http.StatusBadRequest
+	case "用户不存在", "课程不存在", "课程不存在或未发布", "章节不存在", "测验不存在", "审核记录不存在", "角色不存在":
 		code = http.StatusNotFound
 	}
 	response.Fail(c, code, code, err.Error())

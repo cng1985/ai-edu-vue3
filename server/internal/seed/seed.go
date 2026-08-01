@@ -33,7 +33,8 @@ type courseDef struct {
 	Chapters         []chapterDef
 }
 
-func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *repository.QuizRepo, reviews *repository.ReviewRepo) error {
+func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *repository.QuizRepo, reviews *repository.ReviewRepo, roles *repository.RoleRepo) error {
+	seedRolePermissions(roles)
 	total, err := users.Total()
 	if err != nil {
 		return err
@@ -162,6 +163,28 @@ func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *re
 	fmt.Println("   管理员账号: admin / admin123")
 	fmt.Println("   审核员账号: reviewer / review123")
 	return nil
+}
+
+func seedRolePermissions(roles *repository.RoleRepo) {
+	importPerms := func(role string, perms []string) {
+		b, _ := json.Marshal(perms)
+		_ = roles.Upsert(&model.RolePermission{
+			Role: role, Permissions: datatypes.JSON(b), UpdatedAt: time.Now().UnixMilli(),
+		})
+	}
+	// 使用默认权限初始化（可被管理端修改）
+	defaults := map[string][]string{
+		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "ai:chat"},
+		"reviewer": {"course:read", "quiz:read", "review:read", "review:approve", "dashboard:read", "ai:chat"},
+		"operator": {"course:read", "course:write", "quiz:read", "quiz:write", "dashboard:read", "ai:chat"},
+		"learner":  {"course:read", "quiz:read", "ai:chat"},
+		"guest":    {"ai:chat"},
+	}
+	for role, perms := range defaults {
+		if _, err := roles.FindByRole(role); err != nil {
+			importPerms(role, perms)
+		}
+	}
 }
 
 func readMd(path string) string {
