@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 
@@ -60,6 +61,8 @@ var Module = fx.Provide(
 	NewQuizService,
 	NewReviewService,
 	NewDashboardService,
+	NewAIService,
+	NewRBACService,
 )
 
 func genID(prefix string) string {
@@ -84,9 +87,6 @@ func (s *AuthService) Login(username, password string) (*model.LoginResponse, er
 	if user.Status == "disabled" {
 		return nil, errors.New("账号已被禁用")
 	}
-	if user.Role != "admin" && user.Role != "reviewer" && user.Role != "operator" {
-		return nil, errors.New("非管理端账号，无法登录")
-	}
 	token, err := s.jwt.Sign(model.Claims{ID: user.ID, Username: user.Username, Role: user.Role})
 	if err != nil {
 		return nil, err
@@ -94,7 +94,75 @@ func (s *AuthService) Login(username, password string) (*model.LoginResponse, er
 	return &model.LoginResponse{Token: token, User: *user}, nil
 }
 
+func (s *AuthService) Register(req model.RegisterRequest) (*model.LoginResponse, error) {
+	username := strings.TrimSpace(req.Username)
+	nickname := strings.TrimSpace(req.Nickname)
+	if !regexp.MustCompile(`^[a-zA-Z0-9_-]{3,20}$`).MatchString(username) {
+		return nil, errors.New("用户名需为 3~20 位字母、数字、下划线或短横线")
+	}
+	if nickname == "" {
+		return nil, errors.New("请填写昵称")
+	}
+	if len(nickname) > 16 {
+		return nil, errors.New("昵称最长 16 个字符")
+	}
+	if len(req.Password) < 6 {
+		return nil, errors.New("密码至少 6 位")
+	}
+	if _, err := s.users.FindByUsername(username); err == nil {
+		return nil, errors.New("该用户名已被注册")
+	}
+	hash, err := authutil.HashPassword(req.Password)
+	if err != nil {
+		return nil, err
+	}
+	avatar := req.Avatar
+	if avatar == "" {
+		avatar = strings.ToUpper(username[:1])
+	}
+	color := req.AvatarColor
+	if color == "" {
+		color = "#6366f1"
+	}
+	user := model.User{
+		ID: genID("u"), Username: username, Nickname: nickname,
+		PasswordHash: hash, Role: "learner", Status: "active",
+		Avatar: avatar, AvatarColor: color, JoinedAt: time.Now().UnixMilli(),
+	}
+	if err := s.users.Create(&user); err != nil {
+		return nil, err
+	}
+	token, err := s.jwt.Sign(model.Claims{ID: user.ID, Username: user.Username, Role: user.Role})
+	if err != nil {
+		return nil, err
+	}
+	return &model.LoginResponse{Token: token, User: user}, nil
+}
+
+func (s *AuthService) GuestLogin() (*model.LoginResponse, error) {
+	stamp := time.Now().UnixMilli()
+	id := fmt.Sprintf("guest_%d", stamp)
+	username := fmt.Sprintf("guest_%s", genID("g")[2:6])
+	user := model.User{
+		ID: id, Username: username, Nickname: "游客",
+		Role: "guest", Status: "active",
+		Avatar: "访", AvatarColor: "#94a3b8", JoinedAt: stamp,
+	}
+	token, err := s.jwt.Sign(model.Claims{ID: user.ID, Username: user.Username, Role: "guest"})
+	if err != nil {
+		return nil, err
+	}
+	return &model.LoginResponse{Token: token, User: user}, nil
+}
+
 func (s *AuthService) Me(id string) (*model.User, error) {
+	if strings.HasPrefix(id, "guest_") {
+		return &model.User{
+			ID: id, Username: "guest", Nickname: "游客",
+			Role: "guest", Status: "active",
+			Avatar: "访", AvatarColor: "#94a3b8",
+		}, nil
+	}
 	user, err := s.users.FindByID(id)
 	if err != nil {
 		return nil, errors.New("用户不存在")
@@ -374,6 +442,32 @@ func (s *CourseService) DeleteChapter(courseID, chapterID string) error {
 		return errors.New("章节不存在")
 	}
 	return s.courses.DeleteChapter(courseID, chapterID)
+}
+
+func (s *CourseService) ListPublished() ([]model.Course, error) {
+	courses, err := s.courses.ListPublished()
+	if err != nil {
+		return nil, err
+	}
+	if courses == nil {
+		courses = []model.Course{}
+	}
+	for i := range courses {
+		courses[i].ChapterCount = len(courses[i].Chapters)
+		// 列表不返回章节正文
+		for j := range courses[i].Chapters {
+			courses[i].Chapters[j].Content = ""
+		}
+	}
+	return courses, nil
+}
+
+func (s *CourseService) GetPublished(id string) (*model.Course, error) {
+	course, err := s.courses.FindPublishedByID(id)
+	if err != nil {
+		return nil, errors.New("课程不存在或未发布")
+	}
+	return course, nil
 }
 
 // --- Quiz ---

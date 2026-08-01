@@ -60,10 +60,27 @@ npm run dev
 
 ### 演示账号
 
-| 角色 | 用户名 | 密码 |
+| 角色 | 用户名 | 密码 | 入口 |
+| :--- | :--- | :--- | :--- |
+| 管理员 | admin | admin123 | 管理端 |
+| 审核员 | reviewer | review123 | 管理端 |
+| 学员 | demo | demo123 | 应用端 |
+
+### API 接口概览
+
+| 模块 | 接口 | 说明 |
 | :--- | :--- | :--- |
-| 管理员 | admin | admin123 |
-| 审核员 | reviewer | review123 |
+| 认证 | `POST /auth/register` | 学员注册 |
+| 认证 | `POST /auth/login` | 统一登录（学员/管理员） |
+| 认证 | `POST /auth/guest` | 游客登录 |
+| 认证 | `GET /auth/me` | 当前用户信息 |
+| AI | `POST /ai/chat` | AI 问答（JSON） |
+| AI | `POST /ai/chat/stream` | AI 问答（SSE 流式） |
+| 学员 | `GET /app/courses` | 已发布课程列表 |
+| 权限 | `GET /roles` | 角色权限列表 |
+| 权限 | `PUT /roles/:role` | 更新角色权限 |
+
+配置 `LLM_API_KEY` 环境变量可启用真实大模型（OpenAI 兼容接口）。
 
 ### 目录结构
 

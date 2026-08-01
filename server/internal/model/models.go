@@ -125,3 +125,39 @@ type Claims struct {
 	Username string `json:"username"`
 	Role     string `json:"role"`
 }
+
+type RolePermission struct {
+	Role        string         `gorm:"primaryKey;size:20" json:"role"`
+	Permissions datatypes.JSON `gorm:"type:json" json:"permissions"`
+	UpdatedAt   int64          `json:"updatedAt"`
+}
+
+type RoleInfo struct {
+	Role        string   `json:"role"`
+	Name        string   `json:"name"`
+	Permissions []string `json:"permissions"`
+}
+
+type RegisterRequest struct {
+	Username    string `json:"username"`
+	Nickname    string `json:"nickname"`
+	Password    string `json:"password"`
+	Avatar      string `json:"avatar"`
+	AvatarColor string `json:"avatarColor"`
+}
+
+type AISource struct {
+	CourseID     string `json:"courseId"`
+	CourseTitle  string `json:"courseTitle"`
+	ChapterID    string `json:"chapterId"`
+	ChapterTitle string `json:"chapterTitle"`
+}
+
+type ChatRequest struct {
+	Question string `json:"question"`
+}
+
+type ChatResult struct {
+	Text    string     `json:"text"`
+	Sources []AISource `json:"sources"`
+}

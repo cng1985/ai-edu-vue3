@@ -10,13 +10,15 @@ type UserRepo struct{ db *gorm.DB }
 type CourseRepo struct{ db *gorm.DB }
 type QuizRepo struct{ db *gorm.DB }
 type ReviewRepo struct{ db *gorm.DB }
+type RoleRepo struct{ db *gorm.DB }
 
-func NewUserRepo(db *gorm.DB) *UserRepo     { return &UserRepo{db: db} }
-func NewCourseRepo(db *gorm.DB) *CourseRepo { return &CourseRepo{db: db} }
-func NewQuizRepo(db *gorm.DB) *QuizRepo     { return &QuizRepo{db: db} }
-func NewReviewRepo(db *gorm.DB) *ReviewRepo { return &ReviewRepo{db: db} }
+func NewUserRepo(db *gorm.DB) *UserRepo       { return &UserRepo{db: db} }
+func NewCourseRepo(db *gorm.DB) *CourseRepo   { return &CourseRepo{db: db} }
+func NewQuizRepo(db *gorm.DB) *QuizRepo       { return &QuizRepo{db: db} }
+func NewReviewRepo(db *gorm.DB) *ReviewRepo   { return &ReviewRepo{db: db} }
+func NewRoleRepo(db *gorm.DB) *RoleRepo       { return &RoleRepo{db: db} }
 
-var Module = fx.Provide(NewUserRepo, NewCourseRepo, NewQuizRepo, NewReviewRepo)
+var Module = fx.Provide(NewUserRepo, NewCourseRepo, NewQuizRepo, NewReviewRepo, NewRoleRepo)
 
 // --- User ---
 
@@ -169,6 +171,22 @@ func (r *CourseRepo) TotalChapters() (int64, error) {
 	return n, err
 }
 
+func (r *CourseRepo) ListPublished() ([]model.Course, error) {
+	var courses []model.Course
+	err := r.db.Preload("Chapters", "status = ?", "published").
+		Where("status = ?", "published").
+		Find(&courses).Error
+	return courses, err
+}
+
+func (r *CourseRepo) FindPublishedByID(id string) (*model.Course, error) {
+	var course model.Course
+	err := r.db.Preload("Chapters", "status = ?", "published").
+		Where("id = ? AND status = ?", id, "published").
+		First(&course).Error
+	return &course, err
+}
+
 // --- Quiz ---
 
 func (r *QuizRepo) List(keyword, courseID, status string, page, pageSize int) ([]model.Quiz, int64, error) {
@@ -249,3 +267,21 @@ func (r *ReviewRepo) CountByStatus(status string) (int64, error) {
 }
 
 func (r *ReviewRepo) Create(review *model.Review) error { return r.db.Create(review).Error }
+
+// --- Role ---
+
+func (r *RoleRepo) List() ([]model.RolePermission, error) {
+	var roles []model.RolePermission
+	err := r.db.Find(&roles).Error
+	return roles, err
+}
+
+func (r *RoleRepo) FindByRole(role string) (*model.RolePermission, error) {
+	var rp model.RolePermission
+	err := r.db.First(&rp, "role = ?", role).Error
+	return &rp, err
+}
+
+func (r *RoleRepo) Upsert(rp *model.RolePermission) error {
+	return r.db.Save(rp).Error
+}
