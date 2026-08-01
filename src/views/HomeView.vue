@@ -1,154 +1,112 @@
 <script setup>
 import { computed } from 'vue'
-import { courses, getCourse, totalChapterCount } from '../data/courses'
-import { communityPosts, leaderboard, hotTopics, dailyQuote } from '../data/community'
-import { useLearningStore } from '../stores/learning'
 import { useAuthStore } from '../stores/auth'
 import { useGrowthStore } from '../stores/growth'
+import { useLearningStore } from '../stores/learning'
+import { communityPosts } from '../data/community'
 import ProgressRing from '../components/ProgressRing.vue'
 
 const auth = useAuthStore()
 const growth = useGrowthStore()
+const learning = useLearningStore()
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 6) return '夜深了'
-  if (hour < 12) return '早上好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
+  return hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
 })
-
-const displayName = computed(() => {
-  if (!auth.user) return '探索者'
-  return auth.isGuest ? '游客' : auth.user.nickname
+const daysLeft = computed(() => {
+  if (!growth.goal) return 0
+  return Math.max(0, Math.ceil((new Date(growth.goal.deadline) - new Date()) / 86400000))
 })
-
-const continueTarget = computed(() => {
-  const last = learning.lastVisited
-  if (!last) return null
-  const course = getCourse(last.courseId)
-  if (!course) return null
-  const chapter = course.chapters.find((ch) => ch.id === last.chapterId)
-  if (!chapter) return null
-  return { course, chapter }
+const weakDomain = computed(() => [...growth.competencyProgress].sort((a, b) => a.progress - b.progress)[0])
+const todayTasks = computed(() => {
+  if (!growth.hasGoal) return []
+  const tasks = []
+  if (growth.dueReviewCount) {
+    tasks.push({ title: `复习 ${growth.dueReviewCount} 个到期知识点`, meta: '遗忘曲线复习 · 约 5 分钟', to: '/review' })
+  }
+  if (growth.nextUnit) {
+    tasks.push({ title: growth.nextUnit.title, meta: `微单元 · ${growth.nextUnit.duration} 分钟`, to: `/micro/${growth.nextUnit.id}` })
+  }
+  tasks.push({ title: '完成今日学习打卡', meta: '打卡获得 10 成长积分', action: 'checkin', done: growth.checkedInToday })
+  return tasks.slice(0, 3)
 })
-
-const stats = computed(() => [
-  {
-    label: '已完成章节',
-    value: learning.completedCount,
-    suffix: `/ ${totalChapterCount}`,
-    icon: '⚡',
-    tone: 'indigo'
-  },
-  { label: '学习笔记', value: learning.noteCount, suffix: '篇', icon: '🗒️', tone: 'cyan' },
-  {
-    label: '测验平均分',
-    value: learning.quizAverageScore === null ? '—' : learning.quizAverageScore,
-    suffix: learning.quizAverageScore === null ? '' : '分',
-    icon: '🏆',
-    tone: 'amber'
-  },
-  { label: '今日共学', value: 1284, suffix: '人在线', icon: '🔥', tone: 'rose' }
-])
 </script>
 
 <template>
-  <div class="page home">
-    <!-- ============ Hero：深色前卫风 ============ -->
-    <section class="hero">
-      <div class="hero__glow hero__glow--a"></div>
-      <div class="hero__glow hero__glow--b"></div>
-      <div class="hero__glow hero__glow--c"></div>
-      <div class="hero__grid"></div>
-
-      <div class="hero__inner">
-        <div class="hero__text">
-          <div class="hero__badge">
-            <span class="hero__badge-dot"></span>
-            AI 学习社区 · 1,284 位学习者正在共学
-          </div>
-          <h1 class="hero__title">
-            {{ greeting }}，{{ displayName }}
-            <span class="hero__title-accent">从写代码，到调度智能</span>
-          </h1>
-          <p class="hero__desc">
-            提示词工程 → RAG 实战 → AI 原生架构，跟随课程循序渐进，
-            和社区伙伴一起打卡、讨论、分享笔记，完成认知跃迁。
-          </p>
-          <div class="hero__actions">
-            <router-link
-              v-if="continueTarget"
-              :to="`/courses/${continueTarget.course.id}/${continueTarget.chapter.id}`"
-              class="hero-btn hero-btn--primary"
-            >
-              ▶ 继续学习：{{ continueTarget.chapter.title }}
-            </router-link>
-            <router-link v-else to="/courses" class="hero-btn hero-btn--primary">
-              🚀 开始学习之旅
-            </router-link>
-            <router-link to="/chat" class="hero-btn hero-btn--glass">💬 问问 AI 助手</router-link>
-          </div>
-        </div>
-
-        <div class="hero__panel">
-          <ProgressRing :percent="learning.overallProgress" :size="118" :stroke="9" color="#818cf8" />
-          <div class="hero__panel-label">总体学习进度</div>
-          <div class="hero__panel-sub">
-            {{ learning.completedCount }} / {{ totalChapterCount }} 章节
-          </div>
+  <div class="page dashboard">
+    <section v-if="!growth.hasGoal" class="onboarding">
+      <div class="onboarding__glow"></div>
+      <div class="onboarding__copy">
+        <span>目标驱动 · AI 辅助 · 数据评估</span>
+        <h1>{{ greeting }}，{{ auth.user?.nickname || '学习者' }}<br />先确定你想成为的人</h1>
+        <p>完成 3 步职业规划，系统会根据你的基础和时间生成能力图谱、学习任务与里程碑。</p>
+        <router-link to="/career" class="hero-button">✨ 开始 AI 职业规划</router-link>
+      </div>
+      <div class="loop">
+        <div v-for="(item, index) in ['目标确认', '路径分解', '学习执行', '达成评估']" :key="item">
+          <b>{{ index + 1 }}</b><span>{{ item }}</span>
         </div>
       </div>
     </section>
 
-    <!-- ============ 数据看板 ============ -->
-    <section class="stats">
-      <div v-for="s in stats" :key="s.label" class="stat" :class="`stat--${s.tone}`">
-        <span class="stat__icon">{{ s.icon }}</span>
-        <div class="stat__body">
-          <div class="stat__value">
-            {{ s.value }}
-            <small>{{ s.suffix }}</small>
-          </div>
-          <div class="stat__label">{{ s.label }}</div>
+    <template v-else>
+      <section class="welcome">
+        <div>
+          <span class="welcome__date">今日学习驾驶舱</span>
+          <h1>{{ greeting }}，{{ auth.user?.nickname }}！</h1>
+          <p>连续学习 <strong>{{ growth.streak }}</strong> 天 · 今日还有 {{ todayTasks.filter(item => !item.done).length }} 项任务</p>
         </div>
-        <router-link v-if="growth.nextUnit" :to="`/micro/${growth.nextUnit.id}`" class="btn btn--primary">▶ 开始今日学习</router-link>
-        <router-link v-else to="/path" class="btn btn--primary">查看已完成路径</router-link>
+        <router-link :to="growth.nextUnit ? `/micro/${growth.nextUnit.id}` : '/path'" class="btn btn--primary">
+          ▶ {{ growth.nextUnit ? '开始今日学习' : '查看完成路径' }}
+        </router-link>
       </section>
 
-      <section class="goal-card card">
-        <div class="goal-card__main">
-          <span class="tag">当前职业目标 · 进行中</span>
+      <section class="goal-card">
+        <div class="goal-card__content">
+          <span class="goal-tag">当前职业目标 · 进行中</span>
           <h2>{{ growth.goal.name }}</h2>
           <p>剩余 {{ daysLeft }} 天 · 每周 {{ growth.goal.weeklyHours }} 小时 · {{ growth.goal.baseLevel }}起步</p>
-          <div class="goal-progress"><div :style="{ width: growth.achievement + '%' }"></div></div>
-          <div class="goal-progress__labels">
-            <strong>总达成度 {{ growth.achievement }}%</strong>
-            <span>达标线 75%</span>
-          </div>
+          <div class="goal-track"><div :style="{ width: growth.achievement + '%' }"></div></div>
+          <div class="goal-labels"><strong>总达成度 {{ growth.achievement }}%</strong><span>达标线 75%</span></div>
           <div v-if="growth.nextMilestone" class="milestone">
             <span>🏁 下一里程碑</span>
             <strong>{{ growth.nextMilestone.name }}</strong>
             <small>第 {{ growth.nextMilestone.week }} 周 · {{ growth.nextMilestone.standard }}</small>
           </div>
         </div>
-        <div class="goal-card__ring">
-          <ProgressRing :percent="growth.achievement" :size="130" :stroke="10" color="#fff" />
-          <router-link to="/career">调整目标 →</router-link>
+        <div class="goal-card__score">
+          <ProgressRing :percent="growth.achievement" :size="132" :stroke="10" color="#fff" />
+          <router-link to="/stats">查看达成报告 →</router-link>
         </div>
       </section>
 
+      <section class="quick-stats">
+        <router-link to="/path" class="quick-stat card">
+          <span>⚡</span><div><strong>{{ growth.completedUnitCount }}</strong><small>已完成微单元</small></div>
+        </router-link>
+        <router-link to="/review" class="quick-stat card">
+          <span>🔍</span><div><strong>{{ growth.dueReviewCount }}</strong><small>今日待复习</small></div>
+        </router-link>
+        <router-link to="/incentives" class="quick-stat card">
+          <span>🏅</span><div><strong>{{ growth.points }}</strong><small>成长积分 · Lv{{ growth.level.number }}</small></div>
+        </router-link>
+        <router-link to="/courses" class="quick-stat card">
+          <span>📚</span><div><strong>{{ learning.completedCount }}</strong><small>已完成课程章节</small></div>
+        </router-link>
+      </section>
+
       <div class="dashboard-grid">
-        <section class="card panel competencies">
-          <div class="panel-head"><h2>能力域进度</h2><router-link to="/path">完整路径 →</router-link></div>
+        <section class="card panel">
+          <div class="panel-head"><div><h2>能力域进度</h2><p>按知识点掌握度加权聚合</p></div><router-link to="/path">完整路径 →</router-link></div>
           <div v-for="domain in growth.competencyProgress" :key="domain.id" class="competency">
             <div><strong>{{ domain.name }}</strong><span>{{ domain.progress }}%</span></div>
-            <div class="bar"><div :style="{ width: domain.progress + '%', background: domain.color }"></div></div>
+            <div class="bar"><i :style="{ width: domain.progress + '%', background: domain.color }"></i></div>
           </div>
         </section>
 
         <section class="card panel">
-          <div class="panel-head"><h2>今日待办</h2><span>约 {{ growth.nextUnit ? growth.nextUnit.duration + 5 : 5 }} 分钟</span></div>
+          <div class="panel-head"><div><h2>今日待办</h2><p>根据路径、薄弱点和复习日程生成</p></div><span>{{ todayTasks.length }} 项</span></div>
           <div class="task-list">
             <component
               :is="task.to ? 'router-link' : 'button'"
@@ -159,7 +117,7 @@ const stats = computed(() => [
               :class="{ done: task.done }"
               @click="task.action === 'checkin' && growth.checkIn()"
             >
-              <span class="task__check">{{ task.done ? '✓' : index + 1 }}</span>
+              <b>{{ task.done ? '✓' : index + 1 }}</b>
               <span><strong>{{ task.title }}</strong><small>{{ task.meta }}</small></span>
               <i>{{ task.done ? '已完成' : '›' }}</i>
             </component>
@@ -167,841 +125,132 @@ const stats = computed(() => [
         </section>
 
         <section class="card panel ai-panel">
-          <div class="panel-head"><h2>✨ AI 学习建议</h2><router-link to="/chat">继续追问</router-link></div>
-          <p v-if="growth.achievement === 0">先完成第一个 5 分钟微单元。一次只掌握一个小知识点，比浏览大量内容更有效。</p>
-          <p v-else>目前 <strong>{{ weakDomain?.name }}</strong> 达成度为 {{ weakDomain?.progress }}%，建议优先完成该能力域的微单元并通过快测。</p>
-          <div class="suggestion-tags"><span>基于达成度</span><span>今日可完成</span><span>动态路径</span></div>
+          <div class="panel-head"><div><h2>✨ AI 学习建议</h2><p>基于当前达成数据</p></div><router-link to="/review">补强中心 →</router-link></div>
+          <p v-if="growth.achievement === 0">从第一个 5 分钟微单元开始。一次掌握一个小知识点，通过快测后再进入下一步。</p>
+          <p v-else>当前最需要关注的是 <strong>{{ weakDomain?.name }}</strong>（{{ weakDomain?.progress }}%）。优先完成该能力域任务，并按间隔计划复习。</p>
+          <div><span>基于达成度</span><span>关键路径优先</span><span>每日可完成</span></div>
         </section>
 
-        <section class="card panel incentive">
-          <div class="panel-head"><h2>成长激励</h2><span>Lv{{ growth.level.number }}</span></div>
-          <div class="points"><strong>{{ growth.points }}</strong><span>当前积分 · {{ growth.level.name }}</span></div>
-          <div class="level-bar"><div :style="{ width: Math.min(100, growth.points / growth.level.next * 100) + '%' }"></div></div>
-          <p>距下一等级还需 {{ growth.level.next - growth.points }} 积分</p>
+        <section class="card panel growth-panel">
+          <div class="panel-head"><div><h2>成长激励</h2><p>{{ growth.level.name }}</p></div><router-link to="/incentives">勋章墙 →</router-link></div>
+          <div class="points"><strong>{{ growth.points }}</strong><span>累计积分</span><b>Lv{{ growth.level.number }}</b></div>
+          <div class="level-track"><i :style="{ width: Math.min(100, growth.points / growth.level.next * 100) + '%' }"></i></div>
           <div class="badges">
-            <span v-for="badge in growth.badges" :key="badge">🏅 {{ badge }}</span>
+            <span v-for="badge in growth.badges.slice(0, 3)" :key="badge">🏅 {{ badge }}</span>
             <span v-if="!growth.badges.length" class="muted">完成首个任务解锁勋章</span>
           </div>
         </section>
       </div>
-    </section>
+    </template>
 
-    <!-- ============ 主体两栏 ============ -->
-    <div class="home__columns">
-      <div class="home__main">
-        <!-- 课程体系 -->
-        <section class="block">
-          <div class="block__head">
-            <h2><span class="block__marker"></span>课程体系</h2>
-            <router-link to="/courses" class="block__more">查看全部 →</router-link>
-          </div>
-          <div class="course-grid">
-            <CourseCard v-for="course in courses" :key="course.id" :course="course" />
-          </div>
-        </section>
-
-        <!-- 社区动态 -->
-        <section class="block">
-          <div class="block__head">
-            <h2><span class="block__marker block__marker--cyan"></span>社区动态</h2>
-            <span class="block__hint">来自共学伙伴的实战分享</span>
-          </div>
-
-          <router-link to="/chat" class="composer card">
-            <span
-              class="composer__avatar"
-              :style="{ background: auth.user?.avatarColor || '#6366f1' }"
-            >
-              {{ auth.user?.avatar || '你' }}
-            </span>
-            <span class="composer__placeholder">分享你的学习心得，或者向 AI 助手提问…</span>
-            <span class="composer__btn">✨ 发布</span>
-          </router-link>
-
-          <article v-for="post in communityPosts" :key="post.id" class="post card">
-            <div class="post__head">
-              <span class="post__avatar" :style="{ background: post.avatarColor }">
-                {{ post.avatar }}
-              </span>
-              <div class="post__who">
-                <div class="post__author">
-                  {{ post.author }}
-                  <em class="post__level">{{ post.level }}</em>
-                  <em v-if="post.hot" class="post__hot">🔥 热议</em>
-                </div>
-                <div class="post__time">{{ post.time }}</div>
-              </div>
-            </div>
-            <h3 class="post__title">{{ post.title }}</h3>
-            <p class="post__excerpt">{{ post.excerpt }}</p>
-            <div class="post__foot">
-              <div class="post__tags">
-                <span v-for="tag in post.tags" :key="tag" class="post__tag"># {{ tag }}</span>
-              </div>
-              <div class="post__meta">
-                <span>👍 {{ post.likes }}</span>
-                <span>💬 {{ post.comments }}</span>
-              </div>
-            </div>
-          </article>
-        </section>
+    <section class="community card">
+      <div class="panel-head">
+        <div><h2>同路人正在分享</h2><p>学习不孤单，看看社区里的实践与复盘</p></div>
+        <span>学习动态</span>
       </div>
-
-      <!-- ============ 右侧社区栏 ============ -->
-      <aside class="home__rail">
-        <section class="rail-card card">
-          <div class="rail-card__head">
-            <h3>🏅 学霸排行榜</h3>
-            <span class="rail-card__sub">本周</span>
-          </div>
-          <ol class="board">
-            <li v-for="(u, i) in leaderboard" :key="u.name" class="board__row">
-              <span class="board__rank" :class="`board__rank--${i + 1}`">{{ i + 1 }}</span>
-              <span class="board__avatar" :style="{ background: u.avatarColor }">{{ u.avatar }}</span>
-              <span class="board__name">{{ u.name }}</span>
-              <span class="board__score">{{ u.chapters }} 章 · {{ u.streak }} 天</span>
-            </li>
-          </ol>
-        </section>
-
-        <section class="rail-card card">
-          <div class="rail-card__head">
-            <h3>📈 热门话题</h3>
-            <span class="rail-card__sub">24h</span>
-          </div>
-          <div class="topics">
-            <router-link v-for="t in hotTopics" :key="t.name" to="/courses" class="topic">
-              <span class="topic__name"># {{ t.name }}</span>
-              <span class="topic__meta">{{ t.posts }} 帖 <em>{{ t.trend }}</em></span>
-            </router-link>
-          </div>
-        </section>
-
-        <section class="quote">
-          <div class="quote__mark">"</div>
-          <p class="quote__text">{{ dailyQuote.text }}</p>
-          <div class="quote__from">—— {{ dailyQuote.from }}</div>
-        </section>
-      </aside>
-    </div>
+      <div class="post-grid">
+        <article v-for="post in communityPosts.slice(0, 3)" :key="post.id">
+          <div class="post-author"><span :style="{ background: post.avatarColor }">{{ post.avatar }}</span><b>{{ post.author }}</b><small>{{ post.time }}</small></div>
+          <h3>{{ post.title }}</h3>
+          <p>{{ post.excerpt }}</p>
+          <div><span v-for="tag in post.tags" :key="tag">#{{ tag }}</span><small>♡ {{ post.likes }} · 💬 {{ post.comments }}</small></div>
+        </article>
+      </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.home {
-  max-width: 1160px;
-}
-
-/* ================= Hero ================= */
-
-.hero {
-  position: relative;
-  overflow: hidden;
-  border-radius: 22px;
-  padding: 42px 40px;
-  margin-bottom: 22px;
-  background:
-    radial-gradient(ellipse 90% 130% at 8% -20%, #312e81 0%, transparent 55%),
-    linear-gradient(135deg, #0b1020 0%, #131a33 52%, #101426 100%);
-  border: 1px solid rgba(129, 140, 248, 0.22);
-  box-shadow: 0 24px 60px -22px rgba(30, 27, 75, 0.55);
-  color: #e2e8f0;
-  isolation: isolate;
-}
-
-.hero__glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  opacity: 0.55;
-  z-index: -1;
-  animation: hero-float 9s ease-in-out infinite alternate;
-}
-
-.hero__glow--a {
-  width: 380px;
-  height: 380px;
-  top: -180px;
-  right: -60px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.85), transparent 65%);
-}
-
-.hero__glow--b {
-  width: 300px;
-  height: 300px;
-  bottom: -170px;
-  left: 28%;
-  background: radial-gradient(circle, rgba(14, 165, 233, 0.6), transparent 65%);
-  animation-delay: -3s;
-}
-
-.hero__glow--c {
-  width: 240px;
-  height: 240px;
-  top: -110px;
-  left: -80px;
-  background: radial-gradient(circle, rgba(217, 70, 239, 0.45), transparent 65%);
-  animation-delay: -6s;
-}
-
-@keyframes hero-float {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  to {
-    transform: translate3d(26px, 22px, 0) scale(1.12);
-  }
-}
-
-.hero__grid {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
-  background-size: 34px 34px;
-  mask-image: radial-gradient(ellipse 75% 90% at 50% 0%, #000 30%, transparent 100%);
-}
-
-.hero__inner {
-  display: flex;
-  align-items: center;
-  gap: 36px;
-}
-
-.hero__text {
-  flex: 1;
-  min-width: 0;
-}
-
-.hero__badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 14px;
-  margin-bottom: 18px;
-  border-radius: 999px;
-  border: 1px solid rgba(129, 140, 248, 0.35);
-  background: rgba(99, 102, 241, 0.14);
-  color: #c7d2fe;
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  backdrop-filter: blur(6px);
-}
-
-.hero__badge-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #34d399;
-  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
-  animation: pulse-dot 2s ease-out infinite;
-}
-
-@keyframes pulse-dot {
-  from {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6);
-  }
-  to {
-    box-shadow: 0 0 0 9px rgba(52, 211, 153, 0);
-  }
-}
-
-.hero__title {
-  margin: 0 0 12px;
-  font-size: 30px;
-  line-height: 1.3;
-  letter-spacing: -0.02em;
-  color: #f8fafc;
-}
-
-.hero__title-accent {
-  display: block;
-  font-size: 22px;
-  margin-top: 4px;
-  background: linear-gradient(92deg, #818cf8 0%, #38bdf8 45%, #e879f9 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.hero__desc {
-  margin: 0 0 24px;
-  max-width: 540px;
-  color: #94a3b8;
-  font-size: 14.5px;
-}
-
-.hero__actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.hero-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 11px 22px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-  white-space: nowrap;
-}
-
-.hero-btn--primary {
-  background: linear-gradient(92deg, #6366f1, #8b5cf6);
-  color: #fff;
-  box-shadow: 0 10px 26px -8px rgba(99, 102, 241, 0.65);
-}
-
-.hero-btn--primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px -8px rgba(99, 102, 241, 0.8);
-}
-
-.hero-btn--glass {
-  background: rgba(148, 163, 184, 0.1);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  color: #e2e8f0;
-  backdrop-filter: blur(6px);
-}
-
-.hero-btn--glass:hover {
-  background: rgba(148, 163, 184, 0.2);
-  transform: translateY(-2px);
-}
-
-.hero__panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 26px 34px;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(129, 140, 248, 0.25);
-  backdrop-filter: blur(10px);
-}
-
-.hero__panel :deep(.progress-ring__text) {
-  fill: #f8fafc;
-}
-
-.hero__panel-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #cbd5e1;
-}
-
-.hero__panel-sub {
-  font-size: 12px;
-  color: #64748b;
-}
-
-/* ================= 数据看板 ================= */
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 30px;
-}
-
-.stat {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 16px 18px;
-  border-radius: 16px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.stat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08), 0 18px 42px rgba(15, 23, 42, 0.07);
-}
-
-.stat__icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  border-radius: 13px;
-  flex-shrink: 0;
-}
-
-.stat--indigo .stat__icon { background: linear-gradient(135deg, #eef2ff, #e0e7ff); }
-.stat--cyan .stat__icon { background: linear-gradient(135deg, #ecfeff, #cffafe); }
-.stat--amber .stat__icon { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
-.stat--rose .stat__icon { background: linear-gradient(135deg, #fff1f2, #ffe4e6); }
-
-.stat__value {
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-.stat__value small {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-3);
-  margin-left: 2px;
-}
-
-.stat__label {
-  font-size: 12.5px;
-  color: var(--text-2);
-}
-
-/* ================= 两栏布局 ================= */
-
-.home__columns {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 22px;
-  align-items: start;
-}
-
-.home__main {
-  min-width: 0;
-}
-
-.block {
-  margin-bottom: 34px;
-}
-
-.block__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 16px;
-}
-
-.block__head h2 {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  font-size: 19px;
-  letter-spacing: -0.01em;
-}
-
-.block__marker {
-  width: 5px;
-  height: 20px;
-  border-radius: 3px;
-  background: linear-gradient(180deg, #6366f1, #a78bfa);
-}
-
-.block__marker--cyan {
-  background: linear-gradient(180deg, #0ea5e9, #22d3ee);
-}
-
-.block__more {
-  font-size: 13.5px;
-  font-weight: 600;
-}
-
-.block__hint {
-  font-size: 12.5px;
-  color: var(--text-3);
-}
-
-.course-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 16px;
-}
-
-/* ================= 社区动态 ================= */
-
-.composer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 16px;
-  margin-bottom: 14px;
-  color: var(--text-3);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.composer:hover {
-  border-color: var(--primary);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.14);
-}
-
-.composer__avatar {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.composer__placeholder {
-  flex: 1;
-  font-size: 13.5px;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.composer__btn {
-  padding: 7px 16px;
-  border-radius: 999px;
-  background: linear-gradient(92deg, #6366f1, #8b5cf6);
-  color: #fff;
-  font-size: 12.5px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.post {
-  padding: 18px 20px;
-  margin-bottom: 14px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.post:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08), 0 18px 42px rgba(15, 23, 42, 0.07);
-}
-
-.post__head {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin-bottom: 12px;
-}
-
-.post__avatar {
-  width: 38px;
-  height: 38px;
-  min-width: 38px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.post__author {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.post__level {
-  font-style: normal;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--primary-soft);
-  color: var(--primary-strong);
-}
-
-.post__hot {
-  font-style: normal;
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #fff1f2;
-  color: #e11d48;
-}
-
-.post__time {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.post__title {
-  margin: 0 0 7px;
-  font-size: 15.5px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.post__excerpt {
-  margin: 0 0 14px;
-  font-size: 13.5px;
-  line-height: 1.75;
-  color: var(--text-2);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.post__foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
-
-.post__tags {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-}
-
-.post__tag {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 10px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  color: var(--text-2);
-}
-
-.post__meta {
-  display: flex;
-  gap: 14px;
-  font-size: 12.5px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-/* ================= 右侧栏 ================= */
-
-.home__rail {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: sticky;
-  top: 24px;
-}
-
-.rail-card {
-  padding: 18px;
-}
-
-.rail-card__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 14px;
-}
-
-.rail-card__head h3 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.rail-card__sub {
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--text-3);
-}
-
-.board {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.board__row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 8px;
-  border-radius: 10px;
-  transition: background 0.15s ease;
-}
-
-.board__row:hover {
-  background: var(--surface-2);
-}
-
-.board__rank {
-  width: 20px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--text-3);
-  font-style: italic;
-}
-
-.board__rank--1 { color: #f59e0b; }
-.board__rank--2 { color: #94a3b8; }
-.board__rank--3 { color: #d97706; }
-
-.board__avatar {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.board__name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.board__score {
-  font-size: 11.5px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-.topics {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.topic {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 9px;
-  border-radius: 10px;
-  color: var(--text);
-  transition: background 0.15s ease;
-}
-
-.topic:hover {
-  background: var(--primary-soft);
-}
-
-.topic__name {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.topic__meta {
-  font-size: 11.5px;
-  color: var(--text-3);
-  white-space: nowrap;
-}
-
-.topic__meta em {
-  font-style: normal;
-  font-weight: 700;
-  color: var(--success);
-  margin-left: 4px;
-}
-
-.quote {
-  position: relative;
-  padding: 22px 20px 18px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #1e1b4b 0%, #172554 100%);
-  border: 1px solid rgba(129, 140, 248, 0.3);
-  color: #e0e7ff;
-  overflow: hidden;
-}
-
-.quote__mark {
-  position: absolute;
-  top: -18px;
-  right: 10px;
-  font-size: 110px;
-  font-family: Georgia, serif;
-  color: rgba(129, 140, 248, 0.16);
-  pointer-events: none;
-}
-
-.quote__text {
-  margin: 0 0 12px;
-  font-size: 14px;
-  line-height: 1.8;
-  font-weight: 500;
-}
-
-.quote__from {
-  font-size: 11.5px;
-  color: #818cf8;
-}
-
-/* ================= 响应式 ================= */
-
-@media (max-width: 1024px) {
-  .home__columns {
-    grid-template-columns: 1fr;
-  }
-
-  .home__rail {
-    position: static;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
-}
-
-@media (max-width: 860px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 720px) {
-  .hero {
-    padding: 30px 24px;
-  }
-
-  .hero__inner {
-    flex-direction: column-reverse;
-    text-align: center;
-  }
-
-  .hero__title {
-    font-size: 25px;
-  }
-
-  .hero__title-accent {
-    font-size: 19px;
-  }
-
-  .hero__actions {
-    justify-content: center;
-  }
-
-  .hero__desc {
-    margin-inline: auto;
-  }
-
-  .stats {
-    grid-template-columns: 1fr;
-  }
+.dashboard { max-width: 1120px; }
+.onboarding { position: relative; min-height: 390px; padding: 50px; overflow: hidden; border-radius: 22px; color: white; background: #11132b; }
+.onboarding__glow { position: absolute; inset: -40% -10% auto 40%; height: 500px; background: radial-gradient(circle, rgba(124,58,237,.7), transparent 62%); }
+.onboarding__copy { position: relative; z-index: 1; max-width: 650px; }
+.onboarding__copy > span, .welcome__date { color: #a5b4fc; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+.onboarding h1 { margin: 12px 0; font-size: 38px; line-height: 1.25; }
+.onboarding p { max-width: 600px; color: #cbd5e1; font-size: 16px; }
+.hero-button { display: inline-flex; margin-top: 8px; padding: 12px 20px; border-radius: 10px; background: white; color: #312e81; font-weight: 800; }
+.loop { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 50px; }
+.loop div { display: flex; align-items: center; gap: 9px; padding: 12px; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.06); }
+.loop b { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 8px; background: #6366f1; }
+.loop span { font-size: 12px; }
+.welcome { display: flex; align-items: center; justify-content: space-between; margin-bottom: 17px; }
+.welcome h1 { margin: 2px 0; font-size: 27px; }
+.welcome p { margin: 0; color: var(--text-2); }
+.welcome strong { color: var(--warning); }
+.goal-card { display: flex; margin-bottom: 16px; overflow: hidden; border-radius: 17px; color: white; background: linear-gradient(120deg, #312e81, #4f46e5 62%, #7c3aed); box-shadow: 0 13px 35px rgba(49,46,129,.2); }
+.goal-card__content { flex: 1; padding: 27px 31px; }
+.goal-tag { padding: 3px 9px; border-radius: 99px; background: rgba(255,255,255,.13); color: #c7d2fe; font-size: 11px; }
+.goal-card h2 { margin: 8px 0 2px; font-size: 22px; }
+.goal-card p { margin: 0 0 13px; color: #c7d2fe; font-size: 12px; }
+.goal-track { height: 7px; overflow: hidden; border-radius: 8px; background: rgba(255,255,255,.2); }
+.goal-track div { height: 100%; background: linear-gradient(90deg, #34d399, #a7f3d0); }
+.goal-labels { display: flex; justify-content: space-between; margin-top: 4px; color: #c7d2fe; font-size: 11px; }
+.milestone { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; margin-top: 15px; padding: 9px 12px; border-radius: 9px; background: rgba(255,255,255,.09); }
+.milestone span { grid-row: span 2; align-self: center; color: #c7d2fe; font-size: 11px; }
+.milestone small { color: #c7d2fe; }
+.goal-card__score { display: flex; width: 205px; flex-direction: column; align-items: center; justify-content: center; background: rgba(255,255,255,.05); }
+.goal-card__score :deep(.progress-ring__text) { fill: white; font-size: 17px; }
+.goal-card__score a { color: #e0e7ff; font-size: 11px; }
+.quick-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+.quick-stat { display: flex; align-items: center; gap: 11px; padding: 14px 16px; color: inherit; box-shadow: none; }
+.quick-stat > span { font-size: 22px; }
+.quick-stat div { display: flex; flex-direction: column; }
+.quick-stat strong { font-size: 19px; line-height: 1.2; }
+.quick-stat small { color: var(--text-3); }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.panel, .community { padding: 21px 23px; box-shadow: none; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+.panel-head h2 { margin: 0; font-size: 16px; }
+.panel-head p { margin: 2px 0 0; color: var(--text-3); font-size: 10px; }
+.panel-head > a, .panel-head > span { color: var(--primary); font-size: 11px; }
+.competency { margin: 13px 0; }
+.competency > div:first-child { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+.competency span { color: var(--text-2); }
+.bar, .level-track { height: 6px; overflow: hidden; border-radius: 6px; background: var(--border); }
+.bar i, .level-track i { display: block; height: 100%; border-radius: inherit; }
+.task-list { display: flex; flex-direction: column; gap: 7px; }
+.task { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px; border: none; border-radius: 9px; background: var(--surface-2); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.task:hover { background: var(--primary-soft); }
+.task.done { opacity: .6; }
+.task > b { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--primary); }
+.task > span { display: flex; flex: 1; flex-direction: column; }
+.task strong { font-size: 12px; }
+.task small { color: var(--text-3); }
+.task > i { color: var(--text-3); font-size: 11px; font-style: normal; }
+.ai-panel { background: linear-gradient(140deg, #faf5ff, white); }
+.ai-panel > p { color: var(--text-2); font-size: 13px; }
+.ai-panel > div:last-child { display: flex; gap: 6px; flex-wrap: wrap; }
+.ai-panel > div:last-child span { padding: 3px 7px; border: 1px solid #e9d5ff; border-radius: 99px; color: #7e22ce; font-size: 9px; }
+.points { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.points strong { color: var(--warning); font-size: 28px; }
+.points span { color: var(--text-3); font-size: 11px; }
+.points b { margin-left: auto; color: var(--primary); }
+.growth-panel .level-track i { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.badges { display: flex; gap: 6px; margin-top: 13px; flex-wrap: wrap; }
+.badges span { padding: 4px 7px; border-radius: 7px; background: #fffbeb; color: #92400e; font-size: 10px; }
+.badges .muted { color: var(--text-3); background: var(--surface-2); }
+.community { margin-top: 16px; }
+.post-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.post-grid article { padding: 15px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-2); }
+.post-author { display: flex; align-items: center; gap: 7px; }
+.post-author > span { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; color: white; font-size: 10px; }
+.post-author b { font-size: 11px; }
+.post-author small { margin-left: auto; color: var(--text-3); font-size: 9px; }
+.post-grid h3 { margin: 10px 0 5px; font-size: 13px; }
+.post-grid p { display: -webkit-box; margin: 0 0 10px; overflow: hidden; color: var(--text-2); font-size: 10px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.post-grid article > div:last-child { display: flex; gap: 5px; color: var(--primary); font-size: 9px; }
+.post-grid article > div:last-child small { margin-left: auto; color: var(--text-3); }
+@media (max-width: 800px) {
+  .onboarding { padding: 32px 24px; }
+  .onboarding h1 { font-size: 29px; }
+  .loop, .quick-stats { grid-template-columns: 1fr 1fr; }
+  .goal-card { flex-direction: column; }
+  .goal-card__score { width: 100%; padding: 18px; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .post-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .welcome { align-items: flex-start; gap: 10px; }
+  .loop, .quick-stats { grid-template-columns: 1fr; }
 }
 </style>
