@@ -129,7 +129,7 @@ function confirmGoal() {
       <div class="path-head">
         <div>
           <span class="tag">AI 已完成目标分解</span>
-          <h2>{{ frontendPath.name }}</h2>
+          <h2>{{ growth.goal?.name || frontendPath.name }}</h2>
           <p>4 个能力域 · 8 个知识点 · 4 个里程碑</p>
         </div>
         <button class="btn btn--primary" @click="router.push('/')">进入学习驾驶舱</button>

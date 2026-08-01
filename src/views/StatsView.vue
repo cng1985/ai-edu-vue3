@@ -3,9 +3,11 @@ import { computed } from 'vue'
 import { courses, totalChapterCount } from '../data/courses'
 import { quizzes } from '../data/quizzes'
 import { useLearningStore } from '../stores/learning'
+import { useGrowthStore } from '../stores/growth'
 import ProgressRing from '../components/ProgressRing.vue'
 
 const learning = useLearningStore()
+const growth = useGrowthStore()
 
 const weekly = computed(() => learning.weeklyActivity)
 const weeklyMax = computed(() =>
@@ -38,8 +40,9 @@ const noteEntries = computed(() =>
 )
 
 function confirmReset() {
-  if (window.confirm('确定要清空全部学习进度、笔记与测验记录吗？此操作不可恢复。')) {
+  if (window.confirm('确定要清空目标、微单元、积分、课程进度、笔记与测验记录吗？此操作不可恢复。')) {
     learning.resetAll()
+    growth.reset()
   }
 }
 </script>

@@ -102,7 +102,7 @@ export const useGrowthStore = defineStore('growth', {
       this.goal = {
         id: `goal-${Date.now().toString(36)}`,
         careerId,
-        name: frontendPath.name,
+        name: `${weeks} 周成为初级 Web 前端工程师`,
         description: frontendPath.description,
         baseLevel,
         weeklyHours: Number(weeklyHours),
