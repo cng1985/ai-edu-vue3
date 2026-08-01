@@ -79,3 +79,5 @@ export const reviewsApi = {
   approve: (id, comment) => api.post(`/reviews/${id}/approve`, { comment }),
   reject: (id, comment) => api.post(`/reviews/${id}/reject`, { comment })
 }
+
+export { settingsApi } from './settings.js'

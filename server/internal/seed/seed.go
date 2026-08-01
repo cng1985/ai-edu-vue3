@@ -172,19 +172,44 @@ func seedRolePermissions(roles *repository.RoleRepo) {
 			Role: role, Permissions: datatypes.JSON(b), UpdatedAt: time.Now().UnixMilli(),
 		})
 	}
-	// 使用默认权限初始化（可被管理端修改）
 	defaults := map[string][]string{
-		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "ai:chat"},
+		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "settings:manage", "ai:chat"},
 		"reviewer": {"course:read", "quiz:read", "review:read", "review:approve", "dashboard:read", "ai:chat"},
 		"operator": {"course:read", "course:write", "quiz:read", "quiz:write", "dashboard:read", "ai:chat"},
 		"learner":  {"course:read", "quiz:read", "ai:chat"},
 		"guest":    {"ai:chat"},
 	}
 	for role, perms := range defaults {
-		if _, err := roles.FindByRole(role); err != nil {
+		existing, err := roles.FindByRole(role)
+		if err != nil {
 			importPerms(role, perms)
+			continue
+		}
+		if role != "admin" {
+			continue
+		}
+		var current []string
+		_ = json.Unmarshal(existing.Permissions, &current)
+		merged := mergePermissions(current, perms)
+		if len(merged) != len(current) {
+			importPerms(role, merged)
 		}
 	}
+}
+
+func mergePermissions(current, defaults []string) []string {
+	set := map[string]bool{}
+	for _, p := range current {
+		set[p] = true
+	}
+	for _, p := range defaults {
+		set[p] = true
+	}
+	out := make([]string, 0, len(set))
+	for p := range set {
+		out = append(out, p)
+	}
+	return out
 }
 
 func readMd(path string) string {

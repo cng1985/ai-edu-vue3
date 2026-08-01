@@ -16,6 +16,7 @@ const (
 	PermReviewApprove = "review:approve"
 	PermDashboard   = "dashboard:read"
 	PermRoleManage  = "role:manage"
+	PermSettingsManage = "settings:manage"
 	PermAIChat      = "ai:chat"
 )
 
@@ -34,6 +35,7 @@ var AllPermissions = []PermissionInfo{
 	{Code: PermReviewApprove, Name: "审核操作", Group: "内容审核"},
 	{Code: PermDashboard, Name: "数据看板", Group: "运营管理"},
 	{Code: PermRoleManage, Name: "权限管理", Group: "系统管理"},
+	{Code: PermSettingsManage, Name: "系统设置", Group: "系统管理"},
 	{Code: PermAIChat, Name: "AI 对话", Group: "AI 服务"},
 }
 
@@ -50,7 +52,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermCourseRead, PermCourseWrite, PermCourseDelete,
 		PermQuizRead, PermQuizWrite, PermQuizDelete,
 		PermReviewRead, PermReviewApprove,
-		PermDashboard, PermRoleManage, PermAIChat,
+		PermDashboard, PermRoleManage, PermSettingsManage, PermAIChat,
 	},
 	"reviewer": {
 		PermCourseRead, PermQuizRead,

@@ -20,7 +20,8 @@ const routes = [
       { path: 'quizzes', name: 'quizzes', component: () => import('../views/QuizzesView.vue'), meta: { title: '题库管理' } },
       { path: 'quizzes/:id', name: 'quiz-edit', component: () => import('../views/QuizEditView.vue'), meta: { title: '测验编辑' } },
       { path: 'reviews', name: 'reviews', component: () => import('../views/ReviewView.vue'), meta: { title: '内容审核', roles: ['admin', 'reviewer'] } },
-      { path: 'roles', name: 'roles', component: () => import('../views/RolesView.vue'), meta: { title: '权限管理', roles: ['admin'] } }
+      { path: 'roles', name: 'roles', component: () => import('../views/RolesView.vue'), meta: { title: '权限管理', roles: ['admin'] } },
+      { path: 'settings', name: 'settings', component: () => import('../views/SettingsView.vue'), meta: { title: '系统设置', roles: ['admin'] } }
     ]
   }
 ]
