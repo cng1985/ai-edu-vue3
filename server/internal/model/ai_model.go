@@ -116,3 +116,26 @@ type AiModelOverview struct {
 	ProviderModelCount  int64 `json:"providerModelCount"`
 	DefaultVirtualModel string `json:"defaultVirtualModel"`
 }
+
+// AiModelQuickSetupRequest 一键初始化大模型分层配置。
+type AiModelQuickSetupRequest struct {
+	ProviderCode  string `json:"providerCode"`
+	ProviderName  string `json:"providerName"`
+	BaseURL       string `json:"baseUrl"`
+	APIKey        string `json:"apiKey"`
+	CanonicalCode string `json:"canonicalCode"`
+	CanonicalName string `json:"canonicalName"`
+	ModelCode     string `json:"modelCode"`
+	VirtualCode   string `json:"virtualCode"`
+	VirtualName   string `json:"virtualName"`
+	ContextWindow int    `json:"contextWindow"`
+}
+
+// SystemSettingsView 系统设置聚合视图（大模型分层模块 + 知识库）。
+type SystemSettingsView struct {
+	AiModel       AiModelOverview  `json:"aiModel"`
+	Resolved      *ResolvedLLM     `json:"resolved,omitempty"`
+	Providers     []Provider       `json:"providers"`
+	VirtualModels []VirtualModel   `json:"virtualModels"`
+	Knowledge     *KnowledgeStatus `json:"knowledge,omitempty"`
+}

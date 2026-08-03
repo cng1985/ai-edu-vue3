@@ -138,6 +138,12 @@ func NewEngine(
 		settings := admin.Group("/settings", middleware.RequirePermission(rbac.PermSettingsManage))
 		{
 			settings.GET("", h.Settings.Get)
+			settings.GET("/resolve", h.Settings.Resolve)
+			settings.PUT("/default-virtual-model", h.Settings.SetDefaultVirtualModel)
+			settings.POST("/providers", h.Settings.SaveProvider)
+			settings.PUT("/providers/:id", h.Settings.UpdateProvider)
+			settings.POST("/quick-setup", h.Settings.QuickSetup)
+			settings.POST("/knowledge/reindex", h.Settings.ReindexKnowledge)
 			settings.PUT("", h.Settings.Update)
 		}
 

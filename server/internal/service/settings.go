@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"strings"
 	"sync"
 	"time"
@@ -20,13 +21,15 @@ const (
 )
 
 type SettingsService struct {
-	repo   *repository.SettingsRepo
-	boot   *config.Config
-	router *ModelRouter
-	mu     sync.RWMutex
-	llm    *llm.Client
-	llmCfg config.LLMConfig
-	meta   settingsMeta
+	repo      *repository.SettingsRepo
+	boot      *config.Config
+	router    *ModelRouter
+	aiModel   *AiModelService
+	knowledge *KnowledgeService
+	mu        sync.RWMutex
+	llm       *llm.Client
+	llmCfg    config.LLMConfig
+	meta      settingsMeta
 }
 
 type settingsMeta struct {
@@ -34,8 +37,14 @@ type settingsMeta struct {
 	source    string
 }
 
-func NewSettingsService(repo *repository.SettingsRepo, cfg *config.Config, router *ModelRouter) *SettingsService {
-	s := &SettingsService{repo: repo, boot: cfg, router: router}
+func NewSettingsService(
+	repo *repository.SettingsRepo,
+	cfg *config.Config,
+	router *ModelRouter,
+	aiModel *AiModelService,
+	knowledge *KnowledgeService,
+) *SettingsService {
+	s := &SettingsService{repo: repo, boot: cfg, router: router, aiModel: aiModel, knowledge: knowledge}
 	s.reload()
 	return s
 }
@@ -135,6 +144,69 @@ func (s *SettingsService) GetView() model.SettingsView {
 		},
 		UpdatedAt: s.meta.updatedAt,
 	}
+}
+
+// GetSystemView 聚合大模型分层配置与知识库状态。
+func (s *SettingsService) GetSystemView() (*model.SystemSettingsView, error) {
+	overview, err := s.aiModel.Overview()
+	if err != nil {
+		return nil, err
+	}
+	providerRes, err := s.aiModel.ListProviders("", 1, 100)
+	if err != nil {
+		return nil, err
+	}
+	virtualModels, err := s.aiModel.ListVirtualModelOptions()
+	if err != nil {
+		return nil, err
+	}
+	resolved, _ := s.ResolvedLLM()
+	kbStatus, _ := s.knowledge.Status()
+
+	providers := providerRes.List
+	if providers == nil {
+		providers = []model.Provider{}
+	}
+	if virtualModels == nil {
+		virtualModels = []model.VirtualModel{}
+	}
+
+	return &model.SystemSettingsView{
+		AiModel:       *overview,
+		Resolved:      resolved,
+		Providers:     providers,
+		VirtualModels: virtualModels,
+		Knowledge:     kbStatus,
+	}, nil
+}
+
+func (s *SettingsService) ResolveVirtualModel(code string) (*model.ResolvedLLM, error) {
+	if s.router == nil {
+		return nil, errors.New("模型路由未初始化")
+	}
+	return s.router.Resolve(code)
+}
+
+func (s *SettingsService) SetDefaultVirtualModel(code string) error {
+	return s.aiModel.SetDefaultVirtualModel(code)
+}
+
+func (s *SettingsService) SaveProvider(p model.Provider) (*model.Provider, error) {
+	if p.ID != "" {
+		return s.aiModel.UpdateProvider(p.ID, p)
+	}
+	return s.aiModel.CreateProvider(p)
+}
+
+func (s *SettingsService) QuickSetup(req model.AiModelQuickSetupRequest) (*model.SystemSettingsView, error) {
+	if _, err := s.aiModel.QuickSetup(req); err != nil {
+		return nil, err
+	}
+	return s.GetSystemView()
+}
+
+func (s *SettingsService) ReindexKnowledge(ctx context.Context) (*model.KnowledgeStatus, error) {
+	return s.knowledge.RebuildIndex(ctx)
 }
 
 func (s *SettingsService) Update(req model.SettingsUpdateRequest) (*model.SettingsView, error) {
