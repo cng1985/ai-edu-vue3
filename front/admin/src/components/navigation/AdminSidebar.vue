@@ -22,7 +22,7 @@
           :index="group.key"
         >
           <template #title>
-            <el-icon><component :is="groupIcon(group.key)" /></el-icon>
+            <el-icon><component :is="getGroupIcon(group.key)" /></el-icon>
             <span>{{ group.title }}</span>
           </template>
           <el-menu-item
@@ -41,37 +41,15 @@
 
 <script setup>
 import { computed } from 'vue'
-import {
-  DataAnalysis,
-  User,
-  Reading,
-  Service,
-  Ticket,
-  Collection,
-  Setting
-} from '@element-plus/icons-vue'
+import { GROUP_ICONS, getGroupIcon } from '../../utils/navGroupIcons'
 
 defineProps({
-  collapsed: { type: Boolean, default: false },
+  collapsed: { type: Boolean, default: true },
   visibleGroups: { type: Array, required: true },
   activeMenu: { type: String, required: true }
 })
 
-const groupIcons = {
-  operations: DataAnalysis,
-  users: User,
-  content: Reading,
-  service: Service,
-  documents: Ticket,
-  knowledge: Collection,
-  system: Setting
-}
-
-function groupIcon(key) {
-  return groupIcons[key] || DataAnalysis
-}
-
-const openGroups = computed(() => Object.keys(groupIcons))
+const openGroups = computed(() => Object.keys(GROUP_ICONS))
 </script>
 
 <style scoped>

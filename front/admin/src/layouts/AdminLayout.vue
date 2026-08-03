@@ -1,10 +1,19 @@
 <template>
-  <el-container class="admin-layout">
+  <el-container class="admin-layout" :class="layoutClass">
+    <!-- 经典风格：可折叠侧边栏 -->
     <AdminSidebar
-      v-show="!isMobile"
+      v-if="showClassicSidebar"
       :collapsed="collapsed"
       :visible-groups="visibleGroups"
       :active-menu="activeMenu"
+    />
+
+    <!-- Win11 风格：图标导航栏 -->
+    <AdminSidebarWin11
+      v-if="showWin11Nav"
+      :visible-groups="visibleGroups"
+      :active-menu="activeMenu"
+      :active-group="activeGroup"
     />
 
     <AdminMobileNav
@@ -15,7 +24,7 @@
     />
 
     <el-container class="admin-layout__main">
-      <el-header class="admin-header">
+      <el-header class="admin-header" :class="{ 'admin-header--win11': navMode === 'win11' }">
         <div class="admin-header__left">
           <el-button
             v-if="isMobile"
@@ -24,14 +33,20 @@
             @click="mobileNavOpen = true"
           />
           <el-button
-            v-else
+            v-else-if="showCollapseToggle"
             :icon="collapsed ? Expand : Fold"
             text
-            @click="collapsed = !collapsed"
+            @click="toggleCollapsed"
           />
           <AdminBreadcrumb :breadcrumbs="breadcrumbs" />
         </div>
         <div class="admin-header__right">
+          <AdminNavModeSwitcher
+            v-if="!isMobile"
+            :nav-mode="navMode"
+            :compact="isMobile"
+            @change="setNavMode"
+          />
           <el-button
             class="admin-header__search"
             :icon="Search"
@@ -59,14 +74,23 @@
         </div>
       </el-header>
 
+      <!-- 经典风格：顶部分组标签 -->
       <AdminTopNav
-        v-if="!isMobile"
+        v-if="showClassicTopNav"
         :visible-groups="visibleGroups"
         :active-group="activeGroup"
         @navigate="onNavigate"
       />
 
-      <el-main class="admin-main">
+      <!-- 现代风格：水平下拉导航 -->
+      <AdminNavModern
+        v-if="showModernNav"
+        :visible-groups="visibleGroups"
+        :active-menu="activeMenu"
+        :active-group="activeGroup"
+      />
+
+      <el-main class="admin-main" :class="{ 'admin-main--win11': navMode === 'win11' }">
         <router-view />
       </el-main>
     </el-container>
@@ -87,8 +111,12 @@ import { useRoute, useRouter } from 'vue-router'
 import { Expand, Fold, Menu, Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
 import { useAdminNav, useCommandPaletteShortcut } from '../composables/useAdminNav'
+import { useAdminNavLayout } from '../composables/useAdminNavLayout'
 import AdminSidebar from '../components/navigation/AdminSidebar.vue'
+import AdminSidebarWin11 from '../components/navigation/AdminSidebarWin11.vue'
 import AdminTopNav from '../components/navigation/AdminTopNav.vue'
+import AdminNavModern from '../components/navigation/AdminNavModern.vue'
+import AdminNavModeSwitcher from '../components/navigation/AdminNavModeSwitcher.vue'
 import AdminBreadcrumb from '../components/navigation/AdminBreadcrumb.vue'
 import AdminCommandPalette from '../components/navigation/AdminCommandPalette.vue'
 import AdminMobileNav from '../components/navigation/AdminMobileNav.vue'
@@ -97,7 +125,8 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const collapsed = ref(false)
+const { navMode, collapsed, setNavMode, toggleCollapsed } = useAdminNavLayout()
+
 const mobileNavOpen = ref(false)
 const commandOpen = ref(false)
 const isMobile = ref(false)
@@ -126,6 +155,18 @@ watch(
   },
   { immediate: true }
 )
+
+const showClassicSidebar = computed(() => !isMobile.value && navMode.value === 'classic')
+const showWin11Nav = computed(() => !isMobile.value && navMode.value === 'win11')
+const showClassicTopNav = computed(() => !isMobile.value && navMode.value === 'classic')
+const showModernNav = computed(() => !isMobile.value && navMode.value === 'modern')
+const showCollapseToggle = computed(() => navMode.value === 'classic')
+
+const layoutClass = computed(() => ({
+  'admin-layout--classic': navMode.value === 'classic',
+  'admin-layout--win11': navMode.value === 'win11',
+  'admin-layout--modern': navMode.value === 'modern'
+}))
 
 const roleMap = { admin: '管理员', reviewer: '审核员', operator: '运营' }
 const roleLabel = computed(() => auth.user?.roleName || roleMap[auth.user?.role] || auth.user?.role)
@@ -182,6 +223,12 @@ onUnmounted(() => {
   border-bottom: 1px solid #e5e7eb;
 }
 
+.admin-header--win11 {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
 .admin-header__left,
 .admin-header__right {
   display: flex;
@@ -230,6 +277,19 @@ onUnmounted(() => {
   padding: 20px;
   background: #f0f2f5;
   min-height: calc(100vh - 96px);
+}
+
+.admin-layout--modern .admin-main {
+  min-height: calc(100vh - 100px);
+}
+
+.admin-layout--win11 .admin-main {
+  background: #f5f5f5;
+  min-height: calc(100vh - 56px);
+}
+
+.admin-main--win11 {
+  min-height: calc(100vh - 56px);
 }
 
 @media (max-width: 900px) {
