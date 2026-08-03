@@ -24,5 +24,7 @@ export const PERM = {
   DOCUMENT_EXPORT: 'document:export',
   KNOWLEDGE_READ: 'knowledge:read',
   KNOWLEDGE_MANAGE: 'knowledge:manage',
-  SETTINGS_MANAGE: 'settings:manage'
+  SETTINGS_MANAGE: 'settings:manage',
+  AI_MODEL_READ: 'ai_model:read',
+  AI_MODEL_MANAGE: 'ai_model:manage'
 }

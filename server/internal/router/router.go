@@ -141,6 +141,49 @@ func NewEngine(
 			settings.PUT("", h.Settings.Update)
 		}
 
+		// AI 大模型分层配置
+		aiModels := admin.Group("/ai-models", middleware.RequirePermission(rbac.PermAiModelRead))
+		{
+			aiModels.GET("/overview", h.AiModel.Overview)
+			aiModels.GET("/resolve", h.AiModel.ResolveTest)
+			aiModels.PUT("/default", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.SetDefault)
+
+			aiModels.GET("/canonical-models", h.AiModel.ListCanonicalModels)
+			aiModels.POST("/canonical-models", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateCanonicalModel)
+			aiModels.PUT("/canonical-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateCanonicalModel)
+			aiModels.DELETE("/canonical-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteCanonicalModel)
+
+			aiModels.GET("/capabilities", h.AiModel.ListCapabilities)
+			aiModels.POST("/capabilities", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateCapability)
+			aiModels.PUT("/capabilities/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateCapability)
+			aiModels.DELETE("/capabilities/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteCapability)
+
+			aiModels.GET("/capability-models", h.AiModel.ListCapabilityModels)
+			aiModels.POST("/capability-models", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateCapabilityModel)
+			aiModels.DELETE("/capability-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteCapabilityModel)
+
+			aiModels.GET("/providers", h.AiModel.ListProviders)
+			aiModels.GET("/providers/:id", h.AiModel.GetProvider)
+			aiModels.POST("/providers", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateProvider)
+			aiModels.PUT("/providers/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateProvider)
+			aiModels.DELETE("/providers/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteProvider)
+
+			aiModels.GET("/provider-models", h.AiModel.ListProviderModels)
+			aiModels.POST("/provider-models", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateProviderModel)
+			aiModels.PUT("/provider-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateProviderModel)
+			aiModels.DELETE("/provider-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteProviderModel)
+
+			aiModels.GET("/virtual-models", h.AiModel.ListVirtualModels)
+			aiModels.POST("/virtual-models", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateVirtualModel)
+			aiModels.PUT("/virtual-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateVirtualModel)
+			aiModels.DELETE("/virtual-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteVirtualModel)
+
+			aiModels.GET("/virtual-model-mappings", h.AiModel.ListVirtualModelMappings)
+			aiModels.POST("/virtual-model-mappings", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateVirtualModelMapping)
+			aiModels.PUT("/virtual-model-mappings/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateVirtualModelMapping)
+			aiModels.DELETE("/virtual-model-mappings/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteVirtualModelMapping)
+		}
+
 		// 知识库管理
 		knowledge := admin.Group("/knowledge", middleware.RequirePermission(rbac.PermKnowledgeRead))
 		{

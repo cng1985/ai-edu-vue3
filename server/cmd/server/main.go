@@ -23,6 +23,7 @@ func main() {
 		handler.Module,
 		router.Module,
 		fx.Invoke(seed.Run),
+		fx.Invoke(seed.SeedAiModels),
 		fx.Invoke(seed.IndexKnowledge),
 		fx.Invoke(func(_ *gin.Engine) {}),
 	).Run()

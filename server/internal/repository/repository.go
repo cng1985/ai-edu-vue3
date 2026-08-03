@@ -18,7 +18,7 @@ func NewQuizRepo(db *gorm.DB) *QuizRepo       { return &QuizRepo{db: db} }
 func NewReviewRepo(db *gorm.DB) *ReviewRepo   { return &ReviewRepo{db: db} }
 func NewRoleRepo(db *gorm.DB) *RoleRepo       { return &RoleRepo{db: db} }
 
-var Module = fx.Provide(NewUserRepo, NewCourseRepo, NewQuizRepo, NewReviewRepo, NewRoleRepo, NewSettingsRepo, NewCustomerRepo, NewDocumentRepo, NewKnowledgeRepo)
+var Module = fx.Provide(NewUserRepo, NewCourseRepo, NewQuizRepo, NewReviewRepo, NewRoleRepo, NewSettingsRepo, NewCustomerRepo, NewDocumentRepo, NewKnowledgeRepo, NewAiModelRepo)
 
 // --- User ---
 

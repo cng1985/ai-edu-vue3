@@ -117,6 +117,14 @@ export const NAV_GROUPS = [
         keywords: ['权限', '角色', 'role']
       },
       {
+        path: '/ai-models',
+        name: 'ai-models',
+        title: 'AI 大模型配置',
+        icon: 'Cpu',
+        permission: PERM.AI_MODEL_READ,
+        keywords: ['AI', '模型', '大模型', 'LLM']
+      },
+      {
         path: '/settings',
         name: 'settings',
         title: '系统设置',

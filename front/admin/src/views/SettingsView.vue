@@ -45,7 +45,7 @@
         type="info"
         :closable="false"
         show-icon
-        description="服务端口、JWT 密钥、数据库路径仍通过环境变量配置。此处保存的 LLM 配置会写入 SQLite 数据库并立即生效。"
+        description="服务端口、JWT 密钥、数据库路径仍通过环境变量配置。此处保存的 LLM 配置会写入 SQLite 数据库并立即生效。完整的多厂商模型路由请前往「AI 大模型配置」页面管理。"
       />
     </el-card>
   </div>
