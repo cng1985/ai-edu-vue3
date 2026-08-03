@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
@@ -55,70 +54,23 @@ func (s *AIService) Chat(ctx context.Context, req model.ChatRequest, onToken fun
 	}
 
 	client, resolved, err := s.settings.LLMClientFor(req.VirtualModel)
-	if err == nil && client != nil && client.Enabled() {
-		messages := buildLLMMessages(systemPrompt, req.History, userPrompt)
-		full, err := client.StreamMessages(ctx, messages, onToken)
-		if err != nil {
-			return nil, err
-		}
-		result := &model.ChatResult{Text: full, Sources: sources}
-		if resolved != nil {
-			result.Model = resolved.ModelCode
-			result.Provider = resolved.ProviderCode
-			result.VirtualModel = resolved.VirtualModelCode
-			result.CanonicalModel = resolved.CanonicalModelCode
-		}
-		return result, nil
+	if err != nil || client == nil || !client.Enabled() {
+		return nil, fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
-	if mode == "chat" {
-		answer := localChatAnswer(question)
-		for _, ch := range answer {
-			if onToken != nil {
-				onToken(string(ch))
-			}
-			time.Sleep(15 * time.Millisecond)
-		}
-		return &model.ChatResult{Text: answer, Sources: sources}, nil
+	messages := buildLLMMessages(systemPrompt, req.History, userPrompt)
+	full, err := client.StreamMessages(ctx, messages, onToken)
+	if err != nil {
+		return nil, err
 	}
-
-	results, _ := s.knowledge.Search(ctx, question, 0)
-	answer := localAnswerFromResults(question, results)
-	for _, ch := range answer {
-		if onToken != nil {
-			onToken(string(ch))
-		}
-		time.Sleep(15 * time.Millisecond)
+	result := &model.ChatResult{Text: full, Sources: sources}
+	if resolved != nil {
+		result.Model = resolved.ModelCode
+		result.Provider = resolved.ProviderCode
+		result.VirtualModel = resolved.VirtualModelCode
+		result.CanonicalModel = resolved.CanonicalModelCode
 	}
-	return &model.ChatResult{Text: answer, Sources: sources}, nil
-}
-
-func localChatAnswer(question string) string {
-	return fmt.Sprintf(
-		"当前处于**本地模式**（未配置 API Key 或模型路由不可用）。\n\n"+
-			"你问的是：「%s」\n\n"+
-			"请在管理端 **AI 大模型配置** 中为厂商填写 API Key，或在 **系统设置** 中配置 `LLM_API_KEY` 后重试。",
-		question,
-	)
-}
-
-func localAnswerFromResults(question string, results []model.KnowledgeSearchResult) string {
-	if len(results) == 0 {
-		return "抱歉，我在知识库中没有找到与「" + question + "」直接相关的内容。你可以尝试换个问法，或前往课程页面系统学习。"
-	}
-	var b strings.Builder
-	b.WriteString("根据课程内容，关于「")
-	b.WriteString(question)
-	b.WriteString("」的解答如下：\n\n")
-	for i, r := range results {
-		excerpt := r.Chunk.Text
-		if len(excerpt) > 200 {
-			excerpt = excerpt[:200] + "…"
-		}
-		b.WriteString(fmt.Sprintf("%d. **%s**（%s）\n%s\n\n", i+1, r.Chunk.Heading, r.Chunk.ChapterTitle, excerpt))
-	}
-	b.WriteString("---\n*以上回答基于向量知识库检索生成。配置 LLM_API_KEY 后可接入真实大模型。*")
-	return b.String()
+	return result, nil
 }
 
 // ConfigInfo 返回 AI 配置状态（不含密钥）

@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h2>AI 大模型配置</h2>
-      <p>分层管理厂商、统一模型、能力标签与虚拟模型路由，对标 Java 实体：Provider → CanonicalModel → VirtualModel。</p>
+      <p>分层管理 Provider（厂商）、CanonicalModel（统一模型）、Capability（能力标签）与 VirtualModel（虚拟模型路由）。</p>
     </div>
 
     <el-row :gutter="16" class="stats-row">

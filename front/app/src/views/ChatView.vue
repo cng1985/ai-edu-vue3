@@ -20,7 +20,7 @@ const modeLabel = () => {
   if (!chat.aiConfig) return '连接中…'
   return chat.aiConfig.enabled
     ? `大模型 · ${chat.aiConfig.model}`
-    : '本地知识库模式'
+    : '大模型未配置'
 }
 
 function send(text) {
