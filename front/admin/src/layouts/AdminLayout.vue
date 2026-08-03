@@ -1,105 +1,131 @@
 <template>
   <el-container class="admin-layout">
-    <el-aside :width="collapsed ? '64px' : '220px'" class="sidebar">
-      <div class="sidebar__logo">
-        <span v-if="!collapsed">AI 学习管理</span>
-        <span v-else>AI</span>
-      </div>
-      <el-menu
-        :default-active="route.path"
-        :collapse="collapsed"
-        router
-        background-color="#1e1b4b"
-        text-color="#c7d2fe"
-        active-text-color="#ffffff"
-      >
-        <el-menu-item v-if="auth.hasPermission(PERM.DASHBOARD)" index="/dashboard">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>数据看板</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.USER_READ)" index="/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.COURSE_READ)" index="/courses">
-          <el-icon><Reading /></el-icon>
-          <span>课程管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.QUIZ_READ)" index="/quizzes">
-          <el-icon><EditPen /></el-icon>
-          <span>题库管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.CUSTOMER_READ)" index="/customers">
-          <el-icon><Service /></el-icon>
-          <span>客户咨询</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.DOCUMENT_READ)" index="/documents">
-          <el-icon><Ticket /></el-icon>
-          <span>单据管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.KNOWLEDGE_READ)" index="/knowledge">
-          <el-icon><Collection /></el-icon>
-          <span>知识库</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.hasPermission(PERM.ROLE_MANAGE)" index="/roles">
-          <el-icon><Lock /></el-icon>
-          <span>权限管理</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/settings">
-          <el-icon><Setting /></el-icon>
-          <span>系统设置</span>
-        </el-menu-item>
-        <el-menu-item v-if="auth.isReviewer" index="/reviews">
-          <el-icon><DocumentChecked /></el-icon>
-          <span>内容审核</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
+    <AdminSidebar
+      v-show="!isMobile"
+      :collapsed="collapsed"
+      :visible-groups="visibleGroups"
+      :active-menu="activeMenu"
+    />
 
-    <el-container>
-      <el-header class="header">
-        <div class="header__left">
-          <el-button :icon="collapsed ? Expand : Fold" text @click="collapsed = !collapsed" />
-          <el-breadcrumb separator="/">
-            <el-breadcrumb-item>管理后台</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ route.meta.title }}</el-breadcrumb-item>
-          </el-breadcrumb>
+    <AdminMobileNav
+      :open="mobileNavOpen"
+      :visible-groups="visibleGroups"
+      :active-menu="activeMenu"
+      @close="mobileNavOpen = false"
+    />
+
+    <el-container class="admin-layout__main">
+      <el-header class="admin-header">
+        <div class="admin-header__left">
+          <el-button
+            v-if="isMobile"
+            :icon="Menu"
+            text
+            @click="mobileNavOpen = true"
+          />
+          <el-button
+            v-else
+            :icon="collapsed ? Expand : Fold"
+            text
+            @click="collapsed = !collapsed"
+          />
+          <AdminBreadcrumb :breadcrumbs="breadcrumbs" />
         </div>
-        <div class="header__right">
+        <div class="admin-header__right">
+          <el-button
+            class="admin-header__search"
+            :icon="Search"
+            text
+            @click="commandOpen = true"
+          >
+            <span v-if="!isMobile" class="admin-header__search-text">搜索</span>
+            <kbd v-if="!isMobile" class="admin-header__kbd">⌘K</kbd>
+          </el-button>
           <el-tag size="small" :type="roleTagType">{{ roleLabel }}</el-tag>
           <el-dropdown @command="handleCommand">
-            <span class="user-info">
+            <span class="admin-header__user">
               <el-avatar :size="32" :style="{ background: auth.user?.avatarColor }">
                 {{ auth.user?.avatar }}
               </el-avatar>
-              <span class="nickname">{{ auth.user?.nickname }}</span>
+              <span v-if="!isMobile" class="admin-header__nickname">{{ auth.user?.nickname }}</span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="dashboard">返回看板</el-dropdown-item>
+                <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </el-header>
 
-      <el-main class="main">
+      <AdminTopNav
+        v-if="!isMobile"
+        :visible-groups="visibleGroups"
+        :active-group="activeGroup"
+        @navigate="onNavigate"
+      />
+
+      <el-main class="admin-main">
         <router-view />
       </el-main>
     </el-container>
+
+    <AdminCommandPalette
+      v-model="commandOpen"
+      :search-nav="searchNav"
+      :visible-items="visibleItems"
+      :recent-items="recentItems"
+      @select="onNavigate"
+    />
   </el-container>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { Expand, Fold, Menu, Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '../stores/auth'
-import { PERM } from '../constants/permissions'
+import { useAdminNav, useCommandPaletteShortcut } from '../composables/useAdminNav'
+import AdminSidebar from '../components/navigation/AdminSidebar.vue'
+import AdminTopNav from '../components/navigation/AdminTopNav.vue'
+import AdminBreadcrumb from '../components/navigation/AdminBreadcrumb.vue'
+import AdminCommandPalette from '../components/navigation/AdminCommandPalette.vue'
+import AdminMobileNav from '../components/navigation/AdminMobileNav.vue'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+
 const collapsed = ref(false)
+const mobileNavOpen = ref(false)
+const commandOpen = ref(false)
+const isMobile = ref(false)
+
+const {
+  visibleGroups,
+  visibleItems,
+  activeMenu,
+  activeGroup,
+  breadcrumbs,
+  recentItems,
+  recordVisit,
+  navigateTo,
+  searchNav
+} = useAdminNav()
+
+useCommandPaletteShortcut(() => {
+  commandOpen.value = true
+})
+
+watch(
+  () => route.path,
+  (path) => {
+    recordVisit(path)
+    mobileNavOpen.value = false
+  },
+  { immediate: true }
+)
 
 const roleMap = { admin: '管理员', reviewer: '审核员', operator: '运营' }
 const roleLabel = computed(() => auth.user?.roleName || roleMap[auth.user?.role] || auth.user?.role)
@@ -109,10 +135,106 @@ const roleTagType = computed(() => {
   return 'info'
 })
 
+function onNavigate(path) {
+  navigateTo(path)
+}
+
 function handleCommand(cmd) {
   if (cmd === 'logout') {
     auth.logout()
     router.push('/login')
+  } else if (cmd === 'dashboard') {
+    router.push('/dashboard')
   }
 }
+
+function updateMobile() {
+  isMobile.value = window.innerWidth < 900
+  if (!isMobile.value) mobileNavOpen.value = false
+}
+
+onMounted(() => {
+  updateMobile()
+  window.addEventListener('resize', updateMobile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateMobile)
+})
 </script>
+
+<style scoped>
+.admin-layout {
+  min-height: 100vh;
+}
+
+.admin-layout__main {
+  min-width: 0;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 16px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-header__left,
+.admin-header__right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-header__right {
+  flex-shrink: 0;
+}
+
+.admin-header__search {
+  color: #6b7280;
+}
+
+.admin-header__search-text {
+  margin-left: 4px;
+  font-size: 13px;
+}
+
+.admin-header__kbd {
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #f9fafb;
+  font-size: 11px;
+  color: #9ca3af;
+  font-family: inherit;
+}
+
+.admin-header__user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.admin-header__nickname {
+  font-size: 14px;
+  color: #374151;
+}
+
+.admin-main {
+  padding: 20px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 96px);
+}
+
+@media (max-width: 900px) {
+  .admin-main {
+    min-height: calc(100vh - 56px);
+  }
+}
+</style>
