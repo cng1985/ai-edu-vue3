@@ -24,7 +24,8 @@ export const authApi = {
   login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   guest: () => request('/auth/guest', { method: 'POST' }),
   me: () => request('/auth/me'),
-  permissions: () => request('/auth/permissions')
+  permissions: () => request('/auth/permissions'),
+  refreshPermissions: () => request('/auth/permissions/refresh', { method: 'POST' })
 }
 
 export const aiApi = {

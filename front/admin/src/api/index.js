@@ -41,7 +41,8 @@ export default api
 export const authApi = {
   login: (username, password, portal) => api.post('/auth/login', { username, password, portal }),
   me: () => api.get('/auth/me'),
-  permissions: () => api.get('/auth/permissions')
+  permissions: () => api.get('/auth/permissions'),
+  refreshPermissions: () => api.post('/auth/permissions/refresh')
 }
 
 export const dashboardApi = {

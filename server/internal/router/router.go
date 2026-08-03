@@ -46,6 +46,7 @@ func NewEngine(
 	{
 		authed.GET("/auth/me", h.Auth.Me)
 		authed.GET("/auth/permissions", h.Auth.Permissions)
+		authed.POST("/auth/permissions/refresh", h.Auth.RefreshPermissions)
 
 		// AI 服务
 		ai := authed.Group("/ai", middleware.RequirePermission(rbac.PermAIChat))

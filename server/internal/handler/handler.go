@@ -118,6 +118,16 @@ func (h *AuthHandler) Permissions(c *gin.Context) {
 	})
 }
 
+func (h *AuthHandler) RefreshPermissions(c *gin.Context) {
+	claims := middleware.GetClaims(c)
+	user, err := h.svc.RefreshPermissions(claims.ID)
+	if err != nil {
+		failErr(c, err)
+		return
+	}
+	response.OK(c, user, "权限已刷新")
+}
+
 // --- Users ---
 
 func (h *UserHandler) List(c *gin.Context) {

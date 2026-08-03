@@ -58,17 +58,9 @@ export const useAuthStore = defineStore('auth', {
     },
 
     async refreshPermissions() {
-      const data = await authApi.permissions()
-      this.permissions = data.permissions || []
-      if (this.user) {
-        this._persist({
-          ...this.user,
-          role: data.role,
-          roleName: data.roleName,
-          permissions: this.permissions
-        })
-      }
-      return this.permissions
+      const user = await authApi.refreshPermissions()
+      this._persist(user)
+      return user
     },
 
     logout() {

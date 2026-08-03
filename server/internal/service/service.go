@@ -186,6 +186,22 @@ func (s *AuthService) RoleName(role string) string {
 	return s.rbac.GetRoleName(role)
 }
 
+// RefreshPermissions 从数据库读取最新角色并解析权限（不依赖 JWT 中的 role）
+func (s *AuthService) RefreshPermissions(id string) (*model.AuthUser, error) {
+	if strings.HasPrefix(id, "guest_") {
+		return s.Me(id)
+	}
+	user, err := s.users.FindByID(id)
+	if err != nil {
+		return nil, errors.New("用户不存在")
+	}
+	if user.Status == "disabled" {
+		return nil, errors.New("账号已被禁用")
+	}
+	authUser := s.rbac.EnrichUser(user)
+	return &authUser, nil
+}
+
 // --- User ---
 
 func (s *UserService) List(keyword, role, status string, page, pageSize int) (*model.PageResult[model.User], error) {
