@@ -13,6 +13,10 @@ export const AVATAR_PRESETS = [
   { char: 'H', color: '#f97316' }
 ]
 
+function withGuestFlag(user) {
+  return { ...user, isGuest: user?.role === 'guest' }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: loadSession()
@@ -20,36 +24,60 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isLoggedIn: (state) => Boolean(state.user),
-    isGuest: (state) => Boolean(state.user?.isGuest || state.user?.role === 'guest')
+    isGuest: (state) => Boolean(state.user?.isGuest || state.user?.role === 'guest'),
+    permissions: (state) => state.user?.permissions || [],
+    hasPermission: (state) => (perm) => {
+      if (!perm) return true
+      return state.user?.permissions?.includes(perm)
+    },
+    hasAnyPermission: (state) => (list) => {
+      if (!list?.length) return true
+      return list.some((p) => state.user?.permissions?.includes(p))
+    }
   },
 
   actions: {
+    _applyUser(user, token) {
+      const enriched = withGuestFlag(user)
+      if (token) saveSession(token, enriched)
+      else {
+        localStorage.setItem('ai-learning-system:session', JSON.stringify(enriched))
+      }
+      this.user = enriched
+      return enriched
+    },
+
     async register({ username, nickname, password, avatar, avatarColor }) {
       const data = await authApi.register({ username, nickname, password, avatar, avatarColor })
-      saveSession(data.token, data.user)
-      this.user = { ...data.user, isGuest: false }
-      return this.user
+      return this._applyUser(data.user, data.token)
     },
 
     async login(username, password) {
       const data = await authApi.login(username, password)
-      saveSession(data.token, data.user)
-      this.user = { ...data.user, isGuest: false }
-      return this.user
+      return this._applyUser(data.user, data.token)
     },
 
     async loginAsGuest() {
       const data = await authApi.guest()
-      saveSession(data.token, data.user)
-      this.user = { ...data.user, isGuest: true }
-      return this.user
+      return this._applyUser(data.user, data.token)
     },
 
     async fetchMe() {
       const user = await authApi.me()
-      this.user = { ...user, isGuest: user.role === 'guest' }
-      localStorage.setItem('ai-learning-system:session', JSON.stringify(this.user))
-      return this.user
+      return this._applyUser(user)
+    },
+
+    async refreshPermissions() {
+      const data = await authApi.permissions()
+      if (this.user) {
+        return this._applyUser({
+          ...this.user,
+          role: data.role,
+          roleName: data.roleName,
+          permissions: data.permissions
+        })
+      }
+      return data.permissions
     },
 
     logout() {

@@ -51,9 +51,12 @@ func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *re
 	reviewerHash, _ := authutil.HashPassword("review123")
 	demoHash, _ := authutil.HashPassword("demo123")
 
+	operatorHash, _ := authutil.HashPassword("oper123")
+
 	for _, u := range []model.User{
 		{ID: "admin_001", Username: "admin", Nickname: "系统管理员", PasswordHash: adminHash, Role: "admin", Status: "active", Avatar: "管", AvatarColor: "#6366f1", JoinedAt: now},
 		{ID: "reviewer_001", Username: "reviewer", Nickname: "内容审核员", PasswordHash: reviewerHash, Role: "reviewer", Status: "active", Avatar: "审", AvatarColor: "#0ea5e9", JoinedAt: now},
+		{ID: "operator_001", Username: "operator", Nickname: "内容运营", PasswordHash: operatorHash, Role: "operator", Status: "active", Avatar: "运", AvatarColor: "#f59e0b", JoinedAt: now},
 		{ID: "learner_demo", Username: "demo", Nickname: "演示学员", PasswordHash: demoHash, Role: "learner", Status: "active", Avatar: "学", AvatarColor: "#10b981", JoinedAt: now},
 	} {
 		if err := users.Create(&u); err != nil {
@@ -162,6 +165,7 @@ func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *re
 	fmt.Println("✅ 数据种子已写入 SQLite 数据库")
 	fmt.Println("   管理员账号: admin / admin123")
 	fmt.Println("   审核员账号: reviewer / review123")
+	fmt.Println("   运营账号: operator / oper123")
 	return nil
 }
 

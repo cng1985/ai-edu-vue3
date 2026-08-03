@@ -69,7 +69,7 @@ func failErr(c *gin.Context, err error) {
 	switch err.Error() {
 	case "用户名或密码错误":
 		code = http.StatusUnauthorized
-	case "账号已被禁用", "无权限":
+	case "账号已被禁用", "无权限", "无权限访问管理后台":
 		code = http.StatusForbidden
 	case "该用户名已被注册":
 		code = http.StatusBadRequest
@@ -85,12 +85,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Portal   string `json:"portal"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || req.Username == "" || req.Password == "" {
 		response.Fail(c, http.StatusBadRequest, 400, "请输入用户名和密码")
 		return
 	}
-	res, err := h.svc.Login(req.Username, req.Password)
+	res, err := h.svc.Login(req.Username, req.Password, req.Portal)
 	if err != nil {
 		failErr(c, err)
 		return
@@ -106,6 +107,15 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		return
 	}
 	response.OK(c, user)
+}
+
+func (h *AuthHandler) Permissions(c *gin.Context) {
+	claims := middleware.GetClaims(c)
+	response.OK(c, gin.H{
+		"role":        claims.Role,
+		"roleName":    h.svc.RoleName(claims.Role),
+		"permissions": h.svc.Permissions(claims.Role),
+	})
 }
 
 // --- Users ---

@@ -26,6 +26,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401) {
       localStorage.removeItem('admin-token')
       localStorage.removeItem('admin-user')
+      localStorage.removeItem('admin-permissions')
       if (!window.location.hash.includes('/login')) {
         window.location.hash = '#/login'
       }
@@ -38,8 +39,9 @@ api.interceptors.response.use(
 export default api
 
 export const authApi = {
-  login: (username, password) => api.post('/auth/login', { username, password }),
-  me: () => api.get('/auth/me')
+  login: (username, password, portal) => api.post('/auth/login', { username, password, portal }),
+  me: () => api.get('/auth/me'),
+  permissions: () => api.get('/auth/permissions')
 }
 
 export const dashboardApi = {

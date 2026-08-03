@@ -10,7 +10,7 @@
           <template #header>
             <div style="display: flex; justify-content: space-between; align-items: center">
               <span>{{ role.name }} ({{ role.role }})</span>
-              <el-button v-if="auth.isAdmin" size="small" type="primary" @click="openEdit(role)">编辑</el-button>
+              <el-button v-permission="PERM.ROLE_MANAGE" size="small" type="primary" @click="openEdit(role)">编辑</el-button>
             </div>
           </template>
           <el-tag v-for="p in role.permissions" :key="p" size="small" style="margin: 2px">{{ permLabel(p) }}</el-tag>
@@ -38,6 +38,7 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { rolesApi } from '../api/roles.js'
 import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -84,6 +85,9 @@ async function handleSave() {
   try {
     await rolesApi.update(editing.value.role, selectedPerms.value)
     ElMessage.success('权限已更新')
+    if (editing.value.role === auth.user?.role) {
+      await auth.refreshPermissions()
+    }
     dialogVisible.value = false
     loadData()
   } finally {

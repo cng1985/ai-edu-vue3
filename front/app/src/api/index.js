@@ -23,7 +23,8 @@ export const authApi = {
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
   guest: () => request('/auth/guest', { method: 'POST' }),
-  me: () => request('/auth/me')
+  me: () => request('/auth/me'),
+  permissions: () => request('/auth/permissions')
 }
 
 export const aiApi = {

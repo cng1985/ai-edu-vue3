@@ -12,6 +12,7 @@ import (
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
 	"github.com/cng1985/ai-learning-server/pkg/authutil"
+	"github.com/cng1985/ai-learning-server/pkg/rbac"
 	"go.uber.org/fx"
 	"gorm.io/datatypes"
 )
@@ -19,6 +20,7 @@ import (
 type AuthService struct {
 	users *repository.UserRepo
 	jwt   *authutil.JWTManager
+	rbac  *RBACService
 }
 
 type UserService struct{ users *repository.UserRepo }
@@ -38,8 +40,8 @@ type DashboardService struct {
 	reviews *repository.ReviewRepo
 }
 
-func NewAuthService(users *repository.UserRepo, jwt *authutil.JWTManager) *AuthService {
-	return &AuthService{users: users, jwt: jwt}
+func NewAuthService(users *repository.UserRepo, jwt *authutil.JWTManager, rbac *RBACService) *AuthService {
+	return &AuthService{users: users, jwt: jwt, rbac: rbac}
 }
 func NewUserService(users *repository.UserRepo) *UserService { return &UserService{users: users} }
 func NewCourseService(courses *repository.CourseRepo) *CourseService {
@@ -79,7 +81,7 @@ func countQuestions(q datatypes.JSON) int {
 
 // --- Auth ---
 
-func (s *AuthService) Login(username, password string) (*model.LoginResponse, error) {
+func (s *AuthService) Login(username, password, portal string) (*model.LoginResponse, error) {
 	user, err := s.users.FindByUsername(strings.TrimSpace(username))
 	if err != nil || !authutil.VerifyPassword(password, user.PasswordHash) {
 		return nil, errors.New("用户名或密码错误")
@@ -87,11 +89,14 @@ func (s *AuthService) Login(username, password string) (*model.LoginResponse, er
 	if user.Status == "disabled" {
 		return nil, errors.New("账号已被禁用")
 	}
+	if portal == "admin" && !rbac.IsAdminRole(user.Role) {
+		return nil, errors.New("无权限访问管理后台")
+	}
 	token, err := s.jwt.Sign(model.Claims{ID: user.ID, Username: user.Username, Role: user.Role})
 	if err != nil {
 		return nil, err
 	}
-	return &model.LoginResponse{Token: token, User: *user}, nil
+	return &model.LoginResponse{Token: token, User: s.rbac.EnrichUser(user)}, nil
 }
 
 func (s *AuthService) Register(req model.RegisterRequest) (*model.LoginResponse, error) {
@@ -136,7 +141,7 @@ func (s *AuthService) Register(req model.RegisterRequest) (*model.LoginResponse,
 	if err != nil {
 		return nil, err
 	}
-	return &model.LoginResponse{Token: token, User: user}, nil
+	return &model.LoginResponse{Token: token, User: s.rbac.EnrichUser(&user)}, nil
 }
 
 func (s *AuthService) GuestLogin() (*model.LoginResponse, error) {
@@ -152,22 +157,33 @@ func (s *AuthService) GuestLogin() (*model.LoginResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &model.LoginResponse{Token: token, User: user}, nil
+	return &model.LoginResponse{Token: token, User: s.rbac.EnrichUser(&user)}, nil
 }
 
-func (s *AuthService) Me(id string) (*model.User, error) {
+func (s *AuthService) Me(id string) (*model.AuthUser, error) {
 	if strings.HasPrefix(id, "guest_") {
-		return &model.User{
+		guest := &model.User{
 			ID: id, Username: "guest", Nickname: "游客",
 			Role: "guest", Status: "active",
 			Avatar: "访", AvatarColor: "#94a3b8",
-		}, nil
+		}
+		authUser := s.rbac.EnrichUser(guest)
+		return &authUser, nil
 	}
 	user, err := s.users.FindByID(id)
 	if err != nil {
 		return nil, errors.New("用户不存在")
 	}
-	return user, nil
+	authUser := s.rbac.EnrichUser(user)
+	return &authUser, nil
+}
+
+func (s *AuthService) Permissions(role string) []string {
+	return s.rbac.GetPermissions(role)
+}
+
+func (s *AuthService) RoleName(role string) string {
+	return s.rbac.GetRoleName(role)
 }
 
 // --- User ---

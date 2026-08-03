@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h2>用户管理</h2>
-      <el-button type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
+      <el-button v-permission="PERM.USER_CREATE" type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
     </div>
 
     <el-card shadow="never">
@@ -42,7 +42,7 @@
         <el-table-column label="操作" width="160" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-popconfirm title="确定删除该用户？" @confirm="handleDelete(row.id)">
+            <el-popconfirm v-if="auth.hasPermission(PERM.USER_DELETE)" title="确定删除该用户？" @confirm="handleDelete(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
               </template>
@@ -101,7 +101,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { usersApi } from '../api'
+import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
+const auth = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const list = ref([])

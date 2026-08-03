@@ -115,9 +115,15 @@ type ReviewStats struct {
 	Rejected int64 `json:"rejected"`
 }
 
+type AuthUser struct {
+	User
+	Permissions []string `json:"permissions"`
+	RoleName    string   `json:"roleName"`
+}
+
 type LoginResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
+	Token string   `json:"token"`
+	User  AuthUser `json:"user"`
 }
 
 type Claims struct {

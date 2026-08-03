@@ -13,27 +13,27 @@
         text-color="#c7d2fe"
         active-text-color="#ffffff"
       >
-        <el-menu-item index="/dashboard">
+        <el-menu-item v-if="auth.hasPermission(PERM.DASHBOARD)" index="/dashboard">
           <el-icon><DataAnalysis /></el-icon>
           <span>数据看板</span>
         </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/users">
+        <el-menu-item v-if="auth.hasPermission(PERM.USER_READ)" index="/users">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </el-menu-item>
-        <el-menu-item index="/courses">
+        <el-menu-item v-if="auth.hasPermission(PERM.COURSE_READ)" index="/courses">
           <el-icon><Reading /></el-icon>
           <span>课程管理</span>
         </el-menu-item>
-        <el-menu-item index="/quizzes">
+        <el-menu-item v-if="auth.hasPermission(PERM.QUIZ_READ)" index="/quizzes">
           <el-icon><EditPen /></el-icon>
           <span>题库管理</span>
         </el-menu-item>
-        <el-menu-item v-if="auth.isAdmin" index="/roles">
+        <el-menu-item v-if="auth.hasPermission(PERM.ROLE_MANAGE)" index="/roles">
           <el-icon><Lock /></el-icon>
           <span>权限管理</span>
         </el-menu-item>
-        <el-menu-item v-if="auth.isReviewer" index="/reviews">
+        <el-menu-item v-if="auth.hasPermission(PERM.REVIEW_READ)" index="/reviews">
           <el-icon><DocumentChecked /></el-icon>
           <span>内容审核</span>
         </el-menu-item>
@@ -78,6 +78,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
 const route = useRoute()
 const router = useRouter()
@@ -85,7 +86,7 @@ const auth = useAuthStore()
 const collapsed = ref(false)
 
 const roleMap = { admin: '管理员', reviewer: '审核员', operator: '运营' }
-const roleLabel = computed(() => roleMap[auth.user?.role] || auth.user?.role)
+const roleLabel = computed(() => auth.user?.roleName || roleMap[auth.user?.role] || auth.user?.role)
 const roleTagType = computed(() => {
   if (auth.user?.role === 'admin') return 'danger'
   if (auth.user?.role === 'reviewer') return 'warning'
@@ -99,68 +100,3 @@ function handleCommand(cmd) {
   }
 }
 </script>
-
-<style scoped>
-.admin-layout {
-  min-height: 100vh;
-}
-
-.sidebar {
-  background: #1e1b4b;
-  transition: width 0.2s;
-  overflow: hidden;
-}
-
-.sidebar__logo {
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.sidebar .el-menu {
-  border-right: none;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 0 20px;
-}
-
-.header__left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.header__right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.nickname {
-  font-size: 14px;
-  color: #374151;
-}
-
-.main {
-  background: #f0f2f5;
-  min-height: calc(100vh - 60px);
-}
-</style>

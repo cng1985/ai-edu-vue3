@@ -40,10 +40,10 @@
         <el-card shadow="hover">
           <template #header><span>快捷操作</span></template>
           <div style="display: flex; flex-wrap: wrap; gap: 12px">
-            <el-button type="primary" @click="$router.push('/courses')">管理课程</el-button>
-            <el-button @click="$router.push('/quizzes')">管理题库</el-button>
-            <el-button type="warning" @click="$router.push('/reviews')">审核队列</el-button>
-            <el-button v-if="auth.isAdmin" @click="$router.push('/users')">用户管理</el-button>
+            <el-button v-if="auth.hasPermission(PERM.COURSE_READ)" type="primary" @click="$router.push('/courses')">管理课程</el-button>
+            <el-button v-if="auth.hasPermission(PERM.QUIZ_READ)" @click="$router.push('/quizzes')">管理题库</el-button>
+            <el-button v-if="auth.hasPermission(PERM.REVIEW_READ)" type="warning" @click="$router.push('/reviews')">审核队列</el-button>
+            <el-button v-if="auth.hasPermission(PERM.USER_READ)" @click="$router.push('/users')">用户管理</el-button>
           </div>
         </el-card>
       </el-col>
@@ -56,6 +56,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { dashboardApi } from '../api'
 import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
 const auth = useAuthStore()
 const loading = ref(false)
