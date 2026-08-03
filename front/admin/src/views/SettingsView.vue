@@ -37,6 +37,7 @@
         <el-form-item>
           <el-button type="primary" :loading="saving" @click="handleSave">保存配置</el-button>
           <el-button @click="loadData">重置</el-button>
+          <el-button @click="$router.push({ name: 'ai-models' })">前往大模型配置</el-button>
         </el-form-item>
       </el-form>
 
