@@ -70,7 +70,7 @@ func TestModelRouterFallsBackToAnotherProviderModel(t *testing.T) {
 	now := int64(1)
 	records := []any{
 		&model.CanonicalModel{ID: "cm", Code: "chat", Name: "Chat", Status: 1, CreatedAt: now, UpdatedAt: now},
-		&model.Provider{ID: "disabled", Code: "disabled", Name: "Disabled", Status: 0, APIKey: "bad", CreatedAt: now, UpdatedAt: now},
+		&model.Provider{ID: "disabled", Code: "disabled", Name: "Disabled", Status: 1, APIKey: "bad", CreatedAt: now, UpdatedAt: now},
 		&model.Provider{ID: "ready", Code: "ready", Name: "Ready", Status: 1, BaseURL: "https://example.com/v1", APIKey: "good", CreatedAt: now, UpdatedAt: now},
 		&model.ProviderModel{ID: "pm1", ProviderID: "disabled", CanonicalModelID: "cm", ModelCode: "bad-model", Priority: 10, Weight: 100, Status: 1, CreatedAt: now, UpdatedAt: now},
 		&model.ProviderModel{ID: "pm2", ProviderID: "ready", CanonicalModelID: "cm", ModelCode: "good-model", Priority: 20, Weight: 100, Status: 1, CreatedAt: now, UpdatedAt: now},
@@ -100,6 +100,14 @@ func TestModelRouterFallsBackToAnotherProviderModel(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
+	}
+	disabledProvider, err := repo.FindProvider("disabled")
+	if err != nil {
+		t.Fatal(err)
+	}
+	disabledProvider.Status = 0
+	if err := repo.UpdateProvider(disabledProvider); err != nil {
+		t.Fatal(err)
 	}
 
 	resolved, err := router.Resolve("chat-default")
