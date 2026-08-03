@@ -526,3 +526,129 @@ func (s *AiModelService) DeleteVirtualModelMapping(id string) error {
 	s.router.InvalidateClients()
 	return s.repo.DeleteVirtualModelMapping(id)
 }
+
+// QuickSetup 一键创建厂商 → 统一模型 → 厂商模型 → 虚拟模型 → 映射的完整链路。
+func (s *AiModelService) QuickSetup(req model.AiModelQuickSetupRequest) (*model.AiModelOverview, error) {
+	req.ProviderCode = strings.TrimSpace(req.ProviderCode)
+	req.ProviderName = strings.TrimSpace(req.ProviderName)
+	req.BaseURL = strings.TrimSpace(req.BaseURL)
+	req.APIKey = strings.TrimSpace(req.APIKey)
+	req.CanonicalCode = strings.TrimSpace(req.CanonicalCode)
+	req.CanonicalName = strings.TrimSpace(req.CanonicalName)
+	req.ModelCode = strings.TrimSpace(req.ModelCode)
+	req.VirtualCode = strings.TrimSpace(req.VirtualCode)
+	req.VirtualName = strings.TrimSpace(req.VirtualName)
+
+	if req.ProviderCode == "" || req.ProviderName == "" {
+		return nil, errors.New("厂商编码和名称必填")
+	}
+	if req.APIKey == "" {
+		return nil, errors.New("API Key 必填")
+	}
+	if req.CanonicalCode == "" || req.CanonicalName == "" {
+		return nil, errors.New("统一模型编码和名称必填")
+	}
+	if req.ModelCode == "" {
+		req.ModelCode = req.CanonicalCode
+	}
+	if req.VirtualCode == "" {
+		req.VirtualCode = "chat-default"
+	}
+	if req.VirtualName == "" {
+		req.VirtualName = "默认对话模型"
+	}
+	if req.BaseURL == "" {
+		req.BaseURL = "https://api.openai.com/v1"
+	}
+	if req.ContextWindow == 0 {
+		req.ContextWindow = 128000
+	}
+
+	now := time.Now().UnixMilli()
+
+	// 1. 厂商
+	provider, err := s.repo.FindProviderByCode(req.ProviderCode)
+	if err != nil {
+		provider = &model.Provider{
+			ID: genID("pv"), Code: req.ProviderCode, Name: req.ProviderName,
+			BaseURL: req.BaseURL, AuthType: "Bearer", APIKey: req.APIKey,
+			Status: 1, CreatedAt: now, UpdatedAt: now,
+		}
+		if err := s.repo.CreateProvider(provider); err != nil {
+			return nil, err
+		}
+	} else {
+		provider.Name = req.ProviderName
+		provider.BaseURL = req.BaseURL
+		provider.APIKey = req.APIKey
+		provider.Status = 1
+		provider.UpdatedAt = now
+		if err := s.repo.UpdateProvider(provider); err != nil {
+			return nil, err
+		}
+	}
+
+	// 2. 统一模型
+	canonical, err := s.repo.FindCanonicalModelByCode(req.CanonicalCode)
+	if err != nil {
+		canonical = &model.CanonicalModel{
+			ID: genID("cm"), Code: req.CanonicalCode, Name: req.CanonicalName,
+			Status: 1, ContextWindow: req.ContextWindow, CreatedAt: now, UpdatedAt: now,
+		}
+		if err := s.repo.CreateCanonicalModel(canonical); err != nil {
+			return nil, err
+		}
+	}
+
+	// 3. 厂商模型
+	pms, _ := s.repo.ListProviderModels(provider.ID, canonical.ID)
+	if len(pms) == 0 {
+		pm := model.ProviderModel{
+			ID: genID("pm"), ProviderID: provider.ID, CanonicalModelID: canonical.ID,
+			ModelCode: req.ModelCode, Priority: 10, Weight: 100, Status: 1,
+			CreatedAt: now, UpdatedAt: now,
+		}
+		if err := s.repo.CreateProviderModel(&pm); err != nil {
+			return nil, err
+		}
+	}
+
+	// 4. 虚拟模型
+	virtual, err := s.repo.FindVirtualModelByCode(req.VirtualCode)
+	if err != nil {
+		virtual = &model.VirtualModel{
+			ID: genID("vm"), Code: req.VirtualCode, Name: req.VirtualName,
+			Status: 1, CreatedAt: now, UpdatedAt: now,
+		}
+		if err := s.repo.CreateVirtualModel(virtual); err != nil {
+			return nil, err
+		}
+	}
+
+	// 5. 虚拟映射
+	mappings, _ := s.repo.ListVirtualModelMappings(virtual.ID)
+	hasMapping := false
+	for _, m := range mappings {
+		if m.CanonicalModelID == canonical.ID {
+			hasMapping = true
+			break
+		}
+	}
+	if !hasMapping {
+		mapping := model.VirtualModelMapping{
+			ID: genID("vmm"), VirtualModelID: virtual.ID, CanonicalModelID: canonical.ID,
+			Priority: 10, CreatedAt: now,
+		}
+		if err := s.repo.CreateVirtualModelMapping(&mapping); err != nil {
+			return nil, err
+		}
+	}
+
+	// 6. 设为默认
+	if err := s.SetDefaultVirtualModel(req.VirtualCode); err != nil {
+		return nil, err
+	}
+
+	s.router.InvalidateClients()
+	return s.Overview()
+}
