@@ -13,20 +13,27 @@ import (
 )
 
 type Client struct {
-	apiKey  string
-	baseURL string
-	model   string
-	enabled bool
-	client  *http.Client
+	apiKey   string
+	baseURL  string
+	model    string
+	authType string
+	enabled  bool
+	client   *http.Client
 }
 
 func NewClient(apiKey, baseURL, model string) *Client {
+	return NewClientWithAuth(apiKey, baseURL, model, "Bearer")
+}
+
+// NewClientWithAuth 创建 OpenAI 兼容客户端，并支持常见厂商认证头。
+func NewClientWithAuth(apiKey, baseURL, model, authType string) *Client {
 	return &Client{
-		apiKey:  apiKey,
-		baseURL: strings.TrimRight(baseURL, "/"),
-		model:   model,
-		enabled: apiKey != "",
-		client:  &http.Client{Timeout: 120 * time.Second},
+		apiKey:   apiKey,
+		baseURL:  strings.TrimRight(baseURL, "/"),
+		model:    model,
+		authType: strings.TrimSpace(authType),
+		enabled:  apiKey != "",
+		client:   &http.Client{Timeout: 120 * time.Second},
 	}
 }
 
@@ -82,7 +89,7 @@ func (c *Client) Complete(ctx context.Context, messages []chatMessage) (string, 
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	c.applyAuth(req)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -123,7 +130,7 @@ func (c *Client) doStream(ctx context.Context, body []byte, onToken func(string)
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	c.applyAuth(req)
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -160,4 +167,15 @@ func (c *Client) doStream(ctx context.Context, body []byte, onToken func(string)
 		}
 	}
 	return full.String(), scanner.Err()
+}
+
+func (c *Client) applyAuth(req *http.Request) {
+	switch strings.ToLower(c.authType) {
+	case "api-key", "apikey":
+		req.Header.Set("api-key", c.apiKey)
+	case "x-api-key":
+		req.Header.Set("x-api-key", c.apiKey)
+	default:
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
 }

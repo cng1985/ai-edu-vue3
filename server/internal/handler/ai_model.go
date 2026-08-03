@@ -76,7 +76,7 @@ func (h *AiModelHandler) CreateCanonicalModel(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateCanonicalModel(c *gin.Context) {
-	var m model.CanonicalModel
+	var m model.CanonicalModelUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
@@ -124,7 +124,7 @@ func (h *AiModelHandler) CreateCapability(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateCapability(c *gin.Context) {
-	var m model.Capability
+	var m model.CapabilityUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
@@ -214,7 +214,7 @@ func (h *AiModelHandler) CreateProvider(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateProvider(c *gin.Context) {
-	var m model.Provider
+	var m model.ProviderUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
@@ -261,7 +261,7 @@ func (h *AiModelHandler) CreateProviderModel(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateProviderModel(c *gin.Context) {
-	var m model.ProviderModel
+	var m model.ProviderModelUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
@@ -309,7 +309,7 @@ func (h *AiModelHandler) CreateVirtualModel(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateVirtualModel(c *gin.Context) {
-	var m model.VirtualModel
+	var m model.VirtualModelUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
@@ -356,7 +356,7 @@ func (h *AiModelHandler) CreateVirtualModelMapping(c *gin.Context) {
 }
 
 func (h *AiModelHandler) UpdateVirtualModelMapping(c *gin.Context) {
-	var m model.VirtualModelMapping
+	var m model.VirtualModelMappingUpdateRequest
 	if err := c.ShouldBindJSON(&m); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return

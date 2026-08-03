@@ -192,10 +192,11 @@ func (s *SettingsService) SetDefaultVirtualModel(code string) error {
 }
 
 func (s *SettingsService) SaveProvider(p model.Provider) (*model.Provider, error) {
-	if p.ID != "" {
-		return s.aiModel.UpdateProvider(p.ID, p)
-	}
 	return s.aiModel.CreateProvider(p)
+}
+
+func (s *SettingsService) UpdateProvider(id string, req model.ProviderUpdateRequest) (*model.Provider, error) {
+	return s.aiModel.UpdateProvider(id, req)
 }
 
 func (s *SettingsService) QuickSetup(req model.AiModelQuickSetupRequest) (*model.SystemSettingsView, error) {

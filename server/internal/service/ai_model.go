@@ -19,11 +19,26 @@ func NewAiModelService(repo *repository.AiModelRepo, router *ModelRouter) *AiMod
 }
 
 func (s *AiModelService) Overview() (*model.AiModelOverview, error) {
-	providers, _ := s.repo.CountProviders()
-	canonical, _ := s.repo.CountCanonicalModels()
-	caps, _ := s.repo.CountCapabilities()
-	virtual, _ := s.repo.CountVirtualModels()
-	pm, _ := s.repo.CountProviderModels()
+	providers, err := s.repo.CountProviders()
+	if err != nil {
+		return nil, err
+	}
+	canonical, err := s.repo.CountCanonicalModels()
+	if err != nil {
+		return nil, err
+	}
+	caps, err := s.repo.CountCapabilities()
+	if err != nil {
+		return nil, err
+	}
+	virtual, err := s.repo.CountVirtualModels()
+	if err != nil {
+		return nil, err
+	}
+	pm, err := s.repo.CountProviderModels()
+	if err != nil {
+		return nil, err
+	}
 	return &model.AiModelOverview{
 		ProviderCount:       providers,
 		CanonicalModelCount: canonical,
@@ -35,8 +50,12 @@ func (s *AiModelService) Overview() (*model.AiModelOverview, error) {
 }
 
 func (s *AiModelService) SetDefaultVirtualModel(code string) error {
-	if _, err := s.repo.FindVirtualModelByCode(code); err != nil {
+	vm, err := s.repo.FindVirtualModelByCode(strings.TrimSpace(code))
+	if err != nil {
 		return errors.New("虚拟模型不存在")
+	}
+	if vm.Status != 1 {
+		return errors.New("不能将已禁用的虚拟模型设为默认")
 	}
 	if err := s.router.SetDefaultVirtualModel(code); err != nil {
 		return err
@@ -94,19 +113,29 @@ func (s *AiModelService) CreateCanonicalModel(m model.CanonicalModel) (*model.Ca
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateCanonicalModel(id string, req model.CanonicalModel) (*model.CanonicalModel, error) {
+func (s *AiModelService) UpdateCanonicalModel(id string, req model.CanonicalModelUpdateRequest) (*model.CanonicalModel, error) {
 	m, err := s.repo.FindCanonicalModel(id)
 	if err != nil {
 		return nil, errors.New("统一模型不存在")
 	}
-	if req.Name != "" {
-		m.Name = req.Name
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.New("名称不能为空")
+		}
+		m.Name = name
 	}
-	if req.ContextWindow > 0 {
-		m.ContextWindow = req.ContextWindow
+	if req.ContextWindow != nil {
+		if *req.ContextWindow <= 0 {
+			return nil, errors.New("上下文窗口必须大于 0")
+		}
+		m.ContextWindow = *req.ContextWindow
 	}
-	if req.Status != 0 {
-		m.Status = req.Status
+	if req.Status != nil {
+		if !validStatus(*req.Status) {
+			return nil, errors.New("状态值无效")
+		}
+		m.Status = *req.Status
 	}
 	m.UpdatedAt = time.Now().UnixMilli()
 	if err := s.repo.UpdateCanonicalModel(m); err != nil {
@@ -160,16 +189,23 @@ func (s *AiModelService) CreateCapability(m model.Capability) (*model.Capability
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateCapability(id string, req model.Capability) (*model.Capability, error) {
+func (s *AiModelService) UpdateCapability(id string, req model.CapabilityUpdateRequest) (*model.Capability, error) {
 	m, err := s.repo.FindCapability(id)
 	if err != nil {
 		return nil, errors.New("能力标签不存在")
 	}
-	if req.Name != "" {
-		m.Name = req.Name
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.New("名称不能为空")
+		}
+		m.Name = name
 	}
-	if req.Status != 0 {
-		m.Status = req.Status
+	if req.Status != nil {
+		if !validStatus(*req.Status) {
+			return nil, errors.New("状态值无效")
+		}
+		m.Status = *req.Status
 	}
 	m.UpdatedAt = time.Now().UnixMilli()
 	if err := s.repo.UpdateCapability(m); err != nil {
@@ -211,6 +247,12 @@ func (s *AiModelService) CreateCapabilityModel(m model.CapabilityModel) (*model.
 	}
 	if s.repo.ExistsCapabilityModel(m.CanonicalModelID, m.CapabilityID) {
 		return nil, errors.New("关联已存在")
+	}
+	if _, err := s.repo.FindCanonicalModel(m.CanonicalModelID); err != nil {
+		return nil, errors.New("统一模型不存在")
+	}
+	if _, err := s.repo.FindCapability(m.CapabilityID); err != nil {
+		return nil, errors.New("能力标签不存在")
 	}
 	m.ID = genID("cml")
 	m.CreatedAt = time.Now().UnixMilli()
@@ -256,10 +298,15 @@ func (s *AiModelService) GetProvider(id string) (*model.Provider, error) {
 		return nil, errors.New("厂商不存在")
 	}
 	p.APIKeyMasked = maskSecret(p.APIKey)
+	p.APIKey = ""
 	return p, nil
 }
 
 func (s *AiModelService) CreateProvider(m model.Provider) (*model.Provider, error) {
+	m.Code = strings.TrimSpace(m.Code)
+	m.Name = strings.TrimSpace(m.Name)
+	m.BaseURL = strings.TrimSpace(m.BaseURL)
+	m.APIKey = strings.TrimSpace(m.APIKey)
 	if m.Code == "" || m.Name == "" {
 		return nil, errors.New("编码和名称必填")
 	}
@@ -278,28 +325,42 @@ func (s *AiModelService) CreateProvider(m model.Provider) (*model.Provider, erro
 	}
 	s.router.InvalidateClients()
 	m.APIKeyMasked = maskSecret(m.APIKey)
+	m.APIKey = ""
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateProvider(id string, req model.Provider) (*model.Provider, error) {
+func (s *AiModelService) UpdateProvider(id string, req model.ProviderUpdateRequest) (*model.Provider, error) {
 	p, err := s.repo.FindProvider(id)
 	if err != nil {
 		return nil, errors.New("厂商不存在")
 	}
-	if req.Name != "" {
-		p.Name = req.Name
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.New("名称不能为空")
+		}
+		p.Name = name
 	}
-	if req.BaseURL != "" {
-		p.BaseURL = req.BaseURL
+	if req.BaseURL != nil {
+		p.BaseURL = strings.TrimSpace(*req.BaseURL)
 	}
-	if req.AuthType != "" {
-		p.AuthType = req.AuthType
+	if req.AuthType != nil {
+		authType := strings.TrimSpace(*req.AuthType)
+		if authType == "" {
+			authType = "Bearer"
+		}
+		p.AuthType = authType
 	}
-	if strings.TrimSpace(req.APIKey) != "" {
-		p.APIKey = strings.TrimSpace(req.APIKey)
+	if req.ClearAPIKey {
+		p.APIKey = ""
+	} else if req.APIKey != nil && strings.TrimSpace(*req.APIKey) != "" {
+		p.APIKey = strings.TrimSpace(*req.APIKey)
 	}
-	if req.Status != 0 {
-		p.Status = req.Status
+	if req.Status != nil {
+		if !validStatus(*req.Status) {
+			return nil, errors.New("状态值无效")
+		}
+		p.Status = *req.Status
 	}
 	p.UpdatedAt = time.Now().UnixMilli()
 	if err := s.repo.UpdateProvider(p); err != nil {
@@ -307,6 +368,7 @@ func (s *AiModelService) UpdateProvider(id string, req model.Provider) (*model.P
 	}
 	s.router.InvalidateClients()
 	p.APIKeyMasked = maskSecret(p.APIKey)
+	p.APIKey = ""
 	return p, nil
 }
 
@@ -342,6 +404,12 @@ func (s *AiModelService) CreateProviderModel(m model.ProviderModel) (*model.Prov
 	if m.ProviderID == "" || m.CanonicalModelID == "" || m.ModelCode == "" {
 		return nil, errors.New("厂商、统一模型和模型标识必填")
 	}
+	if _, err := s.repo.FindProvider(m.ProviderID); err != nil {
+		return nil, errors.New("厂商不存在")
+	}
+	if _, err := s.repo.FindCanonicalModel(m.CanonicalModelID); err != nil {
+		return nil, errors.New("统一模型不存在")
+	}
 	now := time.Now().UnixMilli()
 	m.ID = genID("pm")
 	if m.Status == 0 {
@@ -362,24 +430,41 @@ func (s *AiModelService) CreateProviderModel(m model.ProviderModel) (*model.Prov
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateProviderModel(id string, req model.ProviderModel) (*model.ProviderModel, error) {
+func (s *AiModelService) UpdateProviderModel(id string, req model.ProviderModelUpdateRequest) (*model.ProviderModel, error) {
 	m, err := s.repo.FindProviderModel(id)
 	if err != nil {
 		return nil, errors.New("厂商模型不存在")
 	}
-	if req.ModelCode != "" {
-		m.ModelCode = req.ModelCode
+	if req.ModelCode != nil {
+		modelCode := strings.TrimSpace(*req.ModelCode)
+		if modelCode == "" {
+			return nil, errors.New("模型标识不能为空")
+		}
+		m.ModelCode = modelCode
 	}
-	m.DeploymentName = req.DeploymentName
-	if req.Priority > 0 {
-		m.Priority = req.Priority
+	if req.DeploymentName != nil {
+		m.DeploymentName = strings.TrimSpace(*req.DeploymentName)
 	}
-	if req.Weight > 0 {
-		m.Weight = req.Weight
+	if req.Priority != nil {
+		if *req.Priority <= 0 {
+			return nil, errors.New("优先级必须大于 0")
+		}
+		m.Priority = *req.Priority
 	}
-	m.ReasoningSupported = req.ReasoningSupported
-	if req.Status != 0 {
-		m.Status = req.Status
+	if req.Weight != nil {
+		if *req.Weight <= 0 {
+			return nil, errors.New("权重必须大于 0")
+		}
+		m.Weight = *req.Weight
+	}
+	if req.ReasoningSupported != nil {
+		m.ReasoningSupported = *req.ReasoningSupported
+	}
+	if req.Status != nil {
+		if !validStatus(*req.Status) {
+			return nil, errors.New("状态值无效")
+		}
+		m.Status = *req.Status
 	}
 	m.UpdatedAt = time.Now().UnixMilli()
 	if err := s.repo.UpdateProviderModel(m); err != nil {
@@ -433,16 +518,26 @@ func (s *AiModelService) CreateVirtualModel(m model.VirtualModel) (*model.Virtua
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateVirtualModel(id string, req model.VirtualModel) (*model.VirtualModel, error) {
+func (s *AiModelService) UpdateVirtualModel(id string, req model.VirtualModelUpdateRequest) (*model.VirtualModel, error) {
 	m, err := s.repo.FindVirtualModel(id)
 	if err != nil {
 		return nil, errors.New("虚拟模型不存在")
 	}
-	if req.Name != "" {
-		m.Name = req.Name
+	if req.Name != nil {
+		name := strings.TrimSpace(*req.Name)
+		if name == "" {
+			return nil, errors.New("名称不能为空")
+		}
+		m.Name = name
 	}
-	if req.Status != 0 {
-		m.Status = req.Status
+	if req.Status != nil {
+		if !validStatus(*req.Status) {
+			return nil, errors.New("状态值无效")
+		}
+		if *req.Status == 0 && m.Code == s.router.DefaultVirtualModelCode() {
+			return nil, errors.New("默认虚拟模型不能禁用，请先更换默认模型")
+		}
+		m.Status = *req.Status
 	}
 	m.UpdatedAt = time.Now().UnixMilli()
 	if err := s.repo.UpdateVirtualModel(m); err != nil {
@@ -453,8 +548,12 @@ func (s *AiModelService) UpdateVirtualModel(id string, req model.VirtualModel) (
 }
 
 func (s *AiModelService) DeleteVirtualModel(id string) error {
-	if _, err := s.repo.FindVirtualModel(id); err != nil {
+	vm, err := s.repo.FindVirtualModel(id)
+	if err != nil {
 		return errors.New("虚拟模型不存在")
+	}
+	if vm.Code == s.router.DefaultVirtualModelCode() {
+		return errors.New("默认虚拟模型不能删除，请先更换默认模型")
 	}
 	s.router.InvalidateClients()
 	return s.repo.DeleteVirtualModel(id)
@@ -484,6 +583,15 @@ func (s *AiModelService) CreateVirtualModelMapping(m model.VirtualModelMapping) 
 	if m.VirtualModelID == "" || m.CanonicalModelID == "" {
 		return nil, errors.New("虚拟模型和统一模型必填")
 	}
+	if _, err := s.repo.FindVirtualModel(m.VirtualModelID); err != nil {
+		return nil, errors.New("虚拟模型不存在")
+	}
+	if _, err := s.repo.FindCanonicalModel(m.CanonicalModelID); err != nil {
+		return nil, errors.New("统一模型不存在")
+	}
+	if s.repo.ExistsVirtualModelMapping(m.VirtualModelID, m.CanonicalModelID) {
+		return nil, errors.New("映射已存在")
+	}
 	m.ID = genID("vmm")
 	if m.Priority == 0 {
 		m.Priority = 10
@@ -496,19 +604,26 @@ func (s *AiModelService) CreateVirtualModelMapping(m model.VirtualModelMapping) 
 	return &m, nil
 }
 
-func (s *AiModelService) UpdateVirtualModelMapping(id string, req model.VirtualModelMapping) (*model.VirtualModelMapping, error) {
+func (s *AiModelService) UpdateVirtualModelMapping(id string, req model.VirtualModelMappingUpdateRequest) (*model.VirtualModelMapping, error) {
 	m, err := s.repo.FindVirtualModelMapping(id)
 	if err != nil {
 		return nil, errors.New("映射不存在")
 	}
-	if req.Priority > 0 {
-		m.Priority = req.Priority
+	if req.Priority != nil {
+		if *req.Priority <= 0 {
+			return nil, errors.New("优先级必须大于 0")
+		}
+		m.Priority = *req.Priority
 	}
 	if err := s.repo.UpdateVirtualModelMapping(m); err != nil {
 		return nil, err
 	}
 	s.router.InvalidateClients()
 	return m, nil
+}
+
+func validStatus(status int) bool {
+	return status == 0 || status == 1
 }
 
 func (s *AiModelService) ListVirtualModelOptions() ([]model.VirtualModel, error) {
@@ -565,17 +680,31 @@ func (s *AiModelService) QuickSetup(req model.AiModelQuickSetupRequest) (*model.
 	}
 
 	now := time.Now().UnixMilli()
+	if err := s.repo.Transaction(func(txRepo *repository.AiModelRepo) error {
+		return quickSetupChain(txRepo, req, now)
+	}); err != nil {
+		return nil, err
+	}
 
-	// 1. 厂商
-	provider, err := s.repo.FindProviderByCode(req.ProviderCode)
+	// 配置链路提交成功后再切换默认模型。
+	if err := s.SetDefaultVirtualModel(req.VirtualCode); err != nil {
+		return nil, err
+	}
+
+	s.router.InvalidateClients()
+	return s.Overview()
+}
+
+func quickSetupChain(repo *repository.AiModelRepo, req model.AiModelQuickSetupRequest, now int64) error {
+	provider, err := repo.FindProviderByCode(req.ProviderCode)
 	if err != nil {
 		provider = &model.Provider{
 			ID: genID("pv"), Code: req.ProviderCode, Name: req.ProviderName,
 			BaseURL: req.BaseURL, AuthType: "Bearer", APIKey: req.APIKey,
 			Status: 1, CreatedAt: now, UpdatedAt: now,
 		}
-		if err := s.repo.CreateProvider(provider); err != nil {
-			return nil, err
+		if err := repo.CreateProvider(provider); err != nil {
+			return err
 		}
 	} else {
 		provider.Name = req.ProviderName
@@ -583,72 +712,84 @@ func (s *AiModelService) QuickSetup(req model.AiModelQuickSetupRequest) (*model.
 		provider.APIKey = req.APIKey
 		provider.Status = 1
 		provider.UpdatedAt = now
-		if err := s.repo.UpdateProvider(provider); err != nil {
-			return nil, err
+		if err := repo.UpdateProvider(provider); err != nil {
+			return err
 		}
 	}
 
-	// 2. 统一模型
-	canonical, err := s.repo.FindCanonicalModelByCode(req.CanonicalCode)
+	canonical, err := repo.FindCanonicalModelByCode(req.CanonicalCode)
 	if err != nil {
 		canonical = &model.CanonicalModel{
 			ID: genID("cm"), Code: req.CanonicalCode, Name: req.CanonicalName,
 			Status: 1, ContextWindow: req.ContextWindow, CreatedAt: now, UpdatedAt: now,
 		}
-		if err := s.repo.CreateCanonicalModel(canonical); err != nil {
-			return nil, err
+		if err := repo.CreateCanonicalModel(canonical); err != nil {
+			return err
+		}
+	} else {
+		canonical.Name = req.CanonicalName
+		canonical.ContextWindow = req.ContextWindow
+		canonical.Status = 1
+		canonical.UpdatedAt = now
+		if err := repo.UpdateCanonicalModel(canonical); err != nil {
+			return err
 		}
 	}
 
-	// 3. 厂商模型
-	pms, _ := s.repo.ListProviderModels(provider.ID, canonical.ID)
-	if len(pms) == 0 {
-		pm := model.ProviderModel{
+	pms, err := repo.ListProviderModels(provider.ID, canonical.ID)
+	if err != nil {
+		return err
+	}
+	var providerModel *model.ProviderModel
+	for i := range pms {
+		if pms[i].ModelCode == req.ModelCode {
+			providerModel = &pms[i]
+			break
+		}
+	}
+	if providerModel == nil {
+		providerModel = &model.ProviderModel{
 			ID: genID("pm"), ProviderID: provider.ID, CanonicalModelID: canonical.ID,
-			ModelCode: req.ModelCode, Priority: 10, Weight: 100, Status: 1,
-			CreatedAt: now, UpdatedAt: now,
+			ModelCode: req.ModelCode, Priority: 10, Weight: 100,
+			Status: 1, CreatedAt: now, UpdatedAt: now,
 		}
-		if err := s.repo.CreateProviderModel(&pm); err != nil {
-			return nil, err
+		if err := repo.CreateProviderModel(providerModel); err != nil {
+			return err
+		}
+	} else {
+		providerModel.Status = 1
+		providerModel.UpdatedAt = now
+		if err := repo.UpdateProviderModel(providerModel); err != nil {
+			return err
 		}
 	}
 
-	// 4. 虚拟模型
-	virtual, err := s.repo.FindVirtualModelByCode(req.VirtualCode)
+	virtual, err := repo.FindVirtualModelByCode(req.VirtualCode)
 	if err != nil {
 		virtual = &model.VirtualModel{
 			ID: genID("vm"), Code: req.VirtualCode, Name: req.VirtualName,
 			Status: 1, CreatedAt: now, UpdatedAt: now,
 		}
-		if err := s.repo.CreateVirtualModel(virtual); err != nil {
-			return nil, err
+		if err := repo.CreateVirtualModel(virtual); err != nil {
+			return err
+		}
+	} else {
+		virtual.Name = req.VirtualName
+		virtual.Status = 1
+		virtual.UpdatedAt = now
+		if err := repo.UpdateVirtualModel(virtual); err != nil {
+			return err
 		}
 	}
 
-	// 5. 虚拟映射
-	mappings, _ := s.repo.ListVirtualModelMappings(virtual.ID)
-	hasMapping := false
-	for _, m := range mappings {
-		if m.CanonicalModelID == canonical.ID {
-			hasMapping = true
-			break
-		}
-	}
-	if !hasMapping {
+	if !repo.ExistsVirtualModelMapping(virtual.ID, canonical.ID) {
 		mapping := model.VirtualModelMapping{
 			ID: genID("vmm"), VirtualModelID: virtual.ID, CanonicalModelID: canonical.ID,
 			Priority: 10, CreatedAt: now,
 		}
-		if err := s.repo.CreateVirtualModelMapping(&mapping); err != nil {
-			return nil, err
+		if err := repo.CreateVirtualModelMapping(&mapping); err != nil {
+			return err
 		}
 	}
-
-	// 6. 设为默认
-	if err := s.SetDefaultVirtualModel(req.VirtualCode); err != nil {
-		return nil, err
-	}
-
-	s.router.InvalidateClients()
-	return s.Overview()
+	return nil
 }
