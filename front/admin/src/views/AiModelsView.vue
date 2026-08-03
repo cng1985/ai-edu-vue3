@@ -130,6 +130,13 @@
             <el-table-column prop="deploymentName" label="部署名" width="120" />
             <el-table-column prop="priority" label="优先级" width="80" />
             <el-table-column prop="weight" label="权重" width="80" />
+            <el-table-column label="推理" width="80">
+              <template #default="{ row }">
+                <el-tag :type="row.reasoningSupported ? 'warning' : 'info'" size="small">
+                  {{ row.reasoningSupported ? '支持' : '否' }}
+                </el-tag>
+              </template>
+            </el-table-column>
             <el-table-column label="状态" width="80">
               <template #default="{ row }">
                 <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
@@ -188,6 +195,23 @@
               <template #default="{ row }">
                 <el-button link type="primary" @click="openMappingDialog(row)">编辑</el-button>
                 <el-button link type="danger" @click="deleteMapping(row)">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane label="能力关联" name="capabilityModels">
+          <div class="tab-toolbar">
+            <el-button v-if="canManage" type="primary" @click="openCapModelDialog()">新增关联</el-button>
+          </div>
+          <el-table :data="capabilityModels" stripe v-loading="loadingCapModels">
+            <el-table-column prop="canonicalModelCode" label="统一模型" width="160" />
+            <el-table-column prop="canonicalModelName" label="模型名称" width="160" />
+            <el-table-column prop="capabilityCode" label="能力编码" width="140" />
+            <el-table-column prop="capabilityName" label="能力名称" width="160" />
+            <el-table-column v-if="canManage" label="操作" width="100" fixed="right">
+              <template #default="{ row }">
+                <el-button link type="danger" @click="deleteCapModel(row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -293,6 +317,9 @@
         <el-form-item label="权重">
           <el-input-number v-model="pmDialog.form.weight" :min="1" />
         </el-form-item>
+        <el-form-item label="推理模型">
+          <el-switch v-model="pmDialog.form.reasoningSupported" />
+        </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="pmDialog.form.status" :active-value="1" :inactive-value="0" />
         </el-form-item>
@@ -345,6 +372,26 @@
       </template>
     </el-dialog>
 
+    <!-- 能力关联对话框 -->
+    <el-dialog v-model="capModelDialog.visible" title="新增能力关联" width="480px">
+      <el-form label-width="100px">
+        <el-form-item label="统一模型" required>
+          <el-select v-model="capModelDialog.form.canonicalModelId" filterable>
+            <el-option v-for="m in canonicalModels" :key="m.id" :label="`${m.code} - ${m.name}`" :value="m.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="能力标签" required>
+          <el-select v-model="capModelDialog.form.capabilityId" filterable>
+            <el-option v-for="c in capabilities" :key="c.id" :label="`${c.code} - ${c.name}`" :value="c.id" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="capModelDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="capModelDialog.saving" @click="saveCapModel">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 能力对话框 -->
     <el-dialog v-model="capDialog.visible" :title="capDialog.isEdit ? '编辑能力' : '新增能力'" width="480px">
       <el-form label-width="80px">
@@ -392,6 +439,7 @@ const providerModels = ref([])
 const virtualModels = ref([])
 const mappings = ref([])
 const capabilities = ref([])
+const capabilityModels = ref([])
 
 const loadingProviders = ref(false)
 const loadingCanonical = ref(false)
@@ -399,6 +447,7 @@ const loadingProviderModels = ref(false)
 const loadingVirtual = ref(false)
 const loadingMappings = ref(false)
 const loadingCapabilities = ref(false)
+const loadingCapModels = ref(false)
 
 const resolveCode = ref('chat-default')
 const resolved = ref(null)
@@ -410,6 +459,7 @@ const pmDialog = reactive({ visible: false, isEdit: false, saving: false, id: ''
 const virtualDialog = reactive({ visible: false, isEdit: false, saving: false, id: '', form: emptyVirtual() })
 const mappingDialog = reactive({ visible: false, isEdit: false, saving: false, id: '', form: emptyMapping() })
 const capDialog = reactive({ visible: false, isEdit: false, saving: false, id: '', form: emptyCapability() })
+const capModelDialog = reactive({ visible: false, saving: false, form: emptyCapModel() })
 
 function emptyProvider() {
   return { code: '', name: '', baseUrl: '', authType: 'Bearer', apiKey: '', status: 1 }
@@ -418,7 +468,10 @@ function emptyCanonical() {
   return { code: '', name: '', contextWindow: 128000, status: 1 }
 }
 function emptyProviderModel() {
-  return { providerId: '', canonicalModelId: '', modelCode: '', deploymentName: '', priority: 10, weight: 100, status: 1 }
+  return { providerId: '', canonicalModelId: '', modelCode: '', deploymentName: '', priority: 10, weight: 100, reasoningSupported: false, status: 1 }
+}
+function emptyCapModel() {
+  return { canonicalModelId: '', capabilityId: '' }
 }
 function emptyVirtual() {
   return { code: '', name: '', status: 1 }
@@ -493,9 +546,26 @@ async function loadCapabilities() {
   }
 }
 
+async function loadCapModels() {
+  loadingCapModels.value = true
+  try {
+    capabilityModels.value = await aiModelsApi.listCapabilityModels()
+  } finally {
+    loadingCapModels.value = false
+  }
+}
+
 async function loadAll() {
   await loadOverview()
-  await Promise.all([loadProviders(), loadCanonical(), loadProviderModels(), loadVirtual(), loadMappings(), loadCapabilities()])
+  await Promise.all([
+    loadProviders(),
+    loadCanonical(),
+    loadProviderModels(),
+    loadVirtual(),
+    loadMappings(),
+    loadCapabilities(),
+    loadCapModels()
+  ])
 }
 
 async function handleResolve() {
@@ -701,6 +771,30 @@ async function deleteCapability(row) {
   ElMessage.success('已删除')
   await loadCapabilities()
   await loadOverview()
+}
+
+function openCapModelDialog() {
+  capModelDialog.form = emptyCapModel()
+  capModelDialog.visible = true
+}
+
+async function saveCapModel() {
+  capModelDialog.saving = true
+  try {
+    await aiModelsApi.createCapabilityModel(capModelDialog.form)
+    capModelDialog.visible = false
+    ElMessage.success('保存成功')
+    await loadCapModels()
+  } finally {
+    capModelDialog.saving = false
+  }
+}
+
+async function deleteCapModel(row) {
+  await ElMessageBox.confirm('确定删除该能力关联？', '确认')
+  await aiModelsApi.deleteCapabilityModel(row.id)
+  ElMessage.success('已删除')
+  await loadCapModels()
 }
 
 onMounted(async () => {
