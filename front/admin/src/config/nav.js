@@ -115,14 +115,6 @@ export const NAV_GROUPS = [
         icon: 'ChatDotRound',
         permission: PERM.AI_CHAT,
         keywords: ['ChatGPT', '对话', '聊天', 'AI']
-      },
-      {
-        path: '/ai-models',
-        name: 'ai-models',
-        title: '大模型配置',
-        icon: 'Cpu',
-        permission: PERM.AI_MODEL_READ,
-        keywords: ['AI', '模型', '大模型', 'LLM', '配置']
       }
     ]
   },
