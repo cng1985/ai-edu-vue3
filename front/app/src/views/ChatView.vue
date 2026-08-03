@@ -16,6 +16,13 @@ const suggestions = [
   '我该从哪门课开始学？'
 ]
 
+const modeLabel = () => {
+  if (!chat.aiConfig) return '连接中…'
+  return chat.aiConfig.enabled
+    ? `大模型 · ${chat.aiConfig.model}`
+    : '本地知识库模式'
+}
+
 function send(text) {
   const question = (text ?? input.value).trim()
   if (!question) return
@@ -41,7 +48,10 @@ watch(
   () => chat.messages.map((m) => m.text.length).join(','),
   scrollToBottom
 )
-onMounted(scrollToBottom)
+onMounted(() => {
+  chat.loadConfig()
+  scrollToBottom()
+})
 </script>
 
 <template>
@@ -49,7 +59,10 @@ onMounted(scrollToBottom)
     <header class="chat__header">
       <div>
         <h1>AI 学习助手</h1>
-        <p>基于平台课程内容的本地知识库检索问答，支持流式输出与出处溯源。</p>
+        <p>
+          基于平台课程知识库的 RAG 智能答疑，支持多轮对话、流式输出与出处溯源。
+          <span class="chat__mode" :class="{ 'chat__mode--live': chat.aiConfig?.enabled }">{{ modeLabel() }}</span>
+        </p>
       </div>
       <button v-if="chat.messages.length" class="btn btn--danger" @click="chat.clear()">
         清空对话
@@ -171,6 +184,22 @@ onMounted(scrollToBottom)
   margin: 0;
   font-size: 13px;
   color: var(--text-2);
+}
+
+.chat__mode {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chat__mode--live {
+  background: #ecfdf5;
+  color: #047857;
 }
 
 .chat__scroll {

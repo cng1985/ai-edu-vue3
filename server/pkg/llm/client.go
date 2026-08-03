@@ -37,6 +37,9 @@ type chatMessage struct {
 	Content string `json:"content"`
 }
 
+// Message 对话消息（对外暴露）
+type Message = chatMessage
+
 type chatRequest struct {
 	Model    string        `json:"model"`
 	Messages []chatMessage `json:"messages"`
@@ -51,19 +54,70 @@ type streamDelta struct {
 	} `json:"choices"`
 }
 
-// StreamChat 调用 OpenAI 兼容接口，通过 onToken 回调流式输出
-func (c *Client) StreamChat(ctx context.Context, systemPrompt, userPrompt string, onToken func(string)) (string, error) {
+// StreamMessages 多轮对话流式输出
+func (c *Client) StreamMessages(ctx context.Context, messages []chatMessage, onToken func(string)) (string, error) {
 	if !c.enabled {
 		return "", fmt.Errorf("LLM 未配置")
 	}
 	body, _ := json.Marshal(chatRequest{
-		Model: c.model,
-		Messages: []chatMessage{
-			{Role: "system", Content: systemPrompt},
-			{Role: "user", Content: userPrompt},
-		},
-		Stream: true,
+		Model:    c.model,
+		Messages: messages,
+		Stream:   true,
 	})
+	return c.doStream(ctx, body, onToken)
+}
+
+// Complete 非流式补全，用于结构化 JSON 输出
+func (c *Client) Complete(ctx context.Context, messages []chatMessage) (string, error) {
+	if !c.enabled {
+		return "", fmt.Errorf("LLM 未配置")
+	}
+	body, _ := json.Marshal(chatRequest{
+		Model:    c.model,
+		Messages: messages,
+		Stream:   false,
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("LLM API 错误 %d: %s", resp.StatusCode, string(b))
+	}
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	if len(result.Choices) == 0 {
+		return "", fmt.Errorf("LLM 返回为空")
+	}
+	return result.Choices[0].Message.Content, nil
+}
+
+// StreamChat 调用 OpenAI 兼容接口，通过 onToken 回调流式输出
+func (c *Client) StreamChat(ctx context.Context, systemPrompt, userPrompt string, onToken func(string)) (string, error) {
+	return c.StreamMessages(ctx, []chatMessage{
+		{Role: "system", Content: systemPrompt},
+		{Role: "user", Content: userPrompt},
+	}, onToken)
+}
+
+func (c *Client) doStream(ctx context.Context, body []byte, onToken func(string)) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
 		return "", err

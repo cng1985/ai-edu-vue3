@@ -76,13 +76,34 @@ npm run dev
 | 认证 | `POST /auth/login` | 统一登录（学员/管理员） |
 | 认证 | `POST /auth/guest` | 游客登录 |
 | 认证 | `GET /auth/me` | 当前用户信息 |
-| AI | `POST /ai/chat` | AI 问答（JSON） |
+| AI | `GET /ai/config` | AI 配置状态（模型/是否启用） |
+| AI | `POST /ai/chat` | AI 问答（JSON，支持多轮 history） |
 | AI | `POST /ai/chat/stream` | AI 问答（SSE 流式） |
+| AI | `POST /ai/career/interview` | AI 职业访谈（SSE 流式） |
+| AI | `POST /ai/career/recommend` | AI 职业推荐 |
+| AI | `POST /ai/goal/decompose` | AI 学习目标分解 |
+| AI | `POST /ai/learning/suggest` | AI 个性化学习建议 |
 | 学员 | `GET /app/courses` | 已发布课程列表 |
 | 权限 | `GET /roles` | 角色权限列表 |
 | 权限 | `PUT /roles/:role` | 更新角色权限 |
 
-配置 `LLM_API_KEY` 环境变量可启用真实大模型（OpenAI 兼容接口）。
+配置以下环境变量可启用真实大模型（OpenAI 兼容接口）：
+
+```bash
+export LLM_API_KEY="sk-..."              # 必填
+export LLM_BASE_URL="https://api.openai.com/v1"  # 可选，默认 OpenAI
+export LLM_MODEL="gpt-4o-mini"         # 可选
+```
+
+DeepSeek 示例：
+
+```bash
+LLM_API_KEY=sk-xxx
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_MODEL=deepseek-chat
+```
+
+前端 AI 助手、职业访谈、目标分解、学习建议均已对接后端 API；未配置 `LLM_API_KEY` 时自动降级为本地规则模式。
 
 ### 目录结构
 

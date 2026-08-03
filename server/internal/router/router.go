@@ -52,6 +52,10 @@ func NewEngine(
 			ai.GET("/config", h.AI.Config)
 			ai.POST("/chat", h.AI.Chat)
 			ai.POST("/chat/stream", h.AI.ChatStream)
+			ai.POST("/career/interview", h.AI.CareerInterview)
+			ai.POST("/career/recommend", h.AI.CareerRecommend)
+			ai.POST("/goal/decompose", h.AI.GoalDecompose)
+			ai.POST("/learning/suggest", h.AI.LearningSuggest)
 		}
 
 		// 学员端接口

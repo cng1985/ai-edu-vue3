@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { careers, frontendPath } from '../data/careerPath'
 import { useGrowthStore } from '../stores/growth'
+import { aiApi } from '../api'
+import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 
 const router = useRouter()
 const growth = useGrowthStore()
@@ -11,6 +13,14 @@ const selectedId = ref(growth.goal?.careerId || 'frontend')
 const baseLevel = ref(growth.goal?.baseLevel || '零基础')
 const weeklyHours = ref(growth.goal?.weeklyHours || 12)
 const durationWeeks = ref(growth.goal?.durationWeeks || 16)
+const decomposing = ref(false)
+const decomposeResult = ref(growth.goal?.aiDecompose || null)
+
+const showInterview = ref(false)
+const interviewInput = ref('')
+const interviewMessages = ref([])
+const interviewGenerating = ref(false)
+let cancelInterview = null
 
 const selected = computed(() => careers.find((item) => item.id === selectedId.value))
 const canCreate = computed(() => selectedId.value === 'frontend')
@@ -19,12 +29,58 @@ function selectCareer(id) {
   selectedId.value = id
 }
 
-function confirmGoal() {
+function buildInterviewHistory() {
+  return interviewMessages.value
+    .filter((m) => m.text)
+    .map((m) => ({ role: m.role, content: m.text }))
+}
+
+function sendInterview() {
+  const text = interviewInput.value.trim()
+  if (!text || interviewGenerating.value) return
+  interviewMessages.value.push({ role: 'user', text })
+  const reply = { role: 'assistant', text: '', streaming: true }
+  interviewMessages.value.push(reply)
+  interviewInput.value = ''
+  interviewGenerating.value = true
+
+  cancelInterview = aiApi.careerInterview(text, buildInterviewHistory().slice(0, -1), {
+    onToken: (chunk) => { reply.text += chunk },
+    onDone: (result) => {
+      reply.text = result.text || reply.text
+      reply.streaming = false
+      interviewGenerating.value = false
+      cancelInterview = null
+    },
+    onError: () => {
+      reply.text = '暂时无法连接 AI 服务，你可以直接选择职业方向继续。'
+      reply.streaming = false
+      interviewGenerating.value = false
+    }
+  })
+}
+
+async function confirmGoal() {
+  decomposing.value = true
+  try {
+    decomposeResult.value = await aiApi.goalDecompose({
+      careerId: selectedId.value,
+      careerName: selected.value?.name || '初级前端工程师',
+      baseLevel: baseLevel.value,
+      weeklyHours: weeklyHours.value,
+      durationWeeks: durationWeeks.value
+    })
+  } catch {
+    decomposeResult.value = null
+  } finally {
+    decomposing.value = false
+  }
   growth.createGoal({
     careerId: selectedId.value,
     baseLevel: baseLevel.value,
     weeklyHours: weeklyHours.value,
-    durationWeeks: durationWeeks.value
+    durationWeeks: durationWeeks.value,
+    aiDecompose: decomposeResult.value
   })
   step.value = 3
 }
@@ -35,7 +91,7 @@ function confirmGoal() {
     <header class="page-header">
       <span class="eyebrow">AI 职业规划</span>
       <h1>选择你想成为的人</h1>
-      <p>用兴趣、基础和可投入时间确定方向，再生成一条可执行、可评估的学习路径。</p>
+      <p>通过 AI 职业访谈了解你的方向，再生成可执行、可评估的学习路径。</p>
     </header>
 
     <div class="steps">
@@ -51,8 +107,39 @@ function confirmGoal() {
         <div>
           <strong>AI 推荐：Web 前端工程师（匹配度 92%）</strong>
           <p>适合希望快速看到成果、通过作品进入 IT 行业的学习者。目前 MVP 已为该方向准备完整路径。</p>
+          <button class="btn btn--ghost interview-toggle" @click="showInterview = !showInterview">
+            {{ showInterview ? '收起 AI 职业访谈' : '💬 开始 AI 职业访谈' }}
+          </button>
         </div>
       </div>
+
+      <div v-if="showInterview" class="interview card">
+        <div class="interview__messages">
+          <p v-if="!interviewMessages.length" class="interview__hint">
+            告诉 AI 你的背景、兴趣和可投入时间，它会帮你分析适合的职业方向。
+          </p>
+          <div
+            v-for="(msg, idx) in interviewMessages"
+            :key="idx"
+            class="interview__msg"
+            :class="`interview__msg--${msg.role}`"
+          >
+            <MarkdownRenderer v-if="msg.role === 'assistant'" :source="msg.text" :live="msg.streaming" />
+            <template v-else>{{ msg.text }}</template>
+          </div>
+        </div>
+        <div class="interview__composer">
+          <input
+            v-model="interviewInput"
+            placeholder="例如：在职测试，想转前端，每周 15 小时…"
+            @keydown.enter="sendInterview"
+          />
+          <button class="btn btn--primary" :disabled="interviewGenerating || !interviewInput.trim()" @click="sendInterview">
+            发送
+          </button>
+        </div>
+      </div>
+
       <div class="career-grid">
         <button
           v-for="career in careers"
@@ -109,7 +196,9 @@ function confirmGoal() {
         </label>
         <div class="form-actions">
           <button class="btn btn--ghost" @click="step = 1">返回</button>
-          <button class="btn btn--primary" @click="confirmGoal">生成学习路径</button>
+          <button class="btn btn--primary" :disabled="decomposing" @click="confirmGoal">
+            {{ decomposing ? 'AI 分解中…' : '生成学习路径' }}
+          </button>
         </div>
       </div>
       <div class="commitment card">
@@ -129,11 +218,23 @@ function confirmGoal() {
       <div class="path-head">
         <div>
           <span class="tag">AI 已完成目标分解</span>
-          <h2>{{ growth.goal?.name || frontendPath.name }}</h2>
-          <p>4 个能力域 · 8 个知识点 · 4 个里程碑</p>
+          <h2>{{ decomposeResult?.goalName || growth.goal?.name || frontendPath.name }}</h2>
+          <p v-if="decomposeResult?.aiSummary">{{ decomposeResult.aiSummary }}</p>
+          <p v-else>4 个能力域 · 8 个知识点 · 4 个里程碑</p>
         </div>
         <button class="btn btn--primary" @click="router.push('/')">进入学习驾驶舱</button>
       </div>
+
+      <div v-if="decomposeResult?.stages?.length" class="ai-stages">
+        <article v-for="stage in decomposeResult.stages" :key="stage.name" class="ai-stage">
+          <strong>{{ stage.name }}</strong>
+          <span>{{ stage.durationWeeks }} 周</span>
+          <ul>
+            <li v-for="topic in stage.topics" :key="topic">{{ topic }}</li>
+          </ul>
+        </article>
+      </div>
+
       <div class="domain-list">
         <article v-for="(domain, index) in frontendPath.competencies" :key="domain.id" class="domain">
           <div class="domain__number">{{ index + 1 }}</div>
@@ -170,6 +271,15 @@ function confirmGoal() {
 .ai-tip { display: flex; gap: 14px; padding: 18px 20px; margin-bottom: 18px; background: linear-gradient(100deg, #eef2ff, #faf5ff); }
 .ai-tip__icon { font-size: 25px; }
 .ai-tip p { margin: 3px 0 0; color: var(--text-2); font-size: 13px; }
+.interview-toggle { margin-top: 10px; }
+.interview { padding: 16px; margin-bottom: 18px; }
+.interview__messages { max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
+.interview__hint { color: var(--text-3); font-size: 13px; }
+.interview__msg { margin: 10px 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.6; }
+.interview__msg--user { background: var(--primary-soft); margin-left: 20%; }
+.interview__msg--assistant { background: var(--surface-2); margin-right: 10%; }
+.interview__composer { display: flex; gap: 8px; }
+.interview__composer input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font: inherit; }
 .career-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .career-card { text-align: left; padding: 22px; cursor: pointer; font: inherit; color: inherit; transition: .2s; }
 .career-card:hover, .career-card.selected { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 10px 30px rgba(99, 102, 241, .12); }
@@ -198,6 +308,10 @@ select { width: 100%; margin-top: 7px; padding: 11px; border: 1px solid var(--bo
 .path-head { margin-bottom: 24px; }
 .path-head h2 { margin: 8px 0 2px; }
 .path-head p { margin: 0; color: var(--text-2); }
+.ai-stages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+.ai-stage { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
+.ai-stage span { color: var(--text-3); font-size: 12px; }
+.ai-stage ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
 .domain-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .domain { display: flex; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
 .domain__number { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-weight: 800; }
@@ -210,7 +324,7 @@ select { width: 100%; margin-top: 7px; padding: 11px; border: 1px solid var(--bo
 .milestones span { font-size: 13px; font-weight: 600; }
 .milestones small { color: var(--text-3); }
 @media (max-width: 800px) {
-  .career-grid, .goal-layout, .domain-list { grid-template-columns: 1fr; }
+  .career-grid, .goal-layout, .domain-list, .ai-stages { grid-template-columns: 1fr; }
   .milestones { grid-template-columns: 1fr 1fr; }
   .steps { overflow-x: auto; }
   .step { min-width: 130px; }

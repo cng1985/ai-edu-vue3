@@ -1,14 +1,16 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useGrowthStore } from '../stores/growth'
 import { useLearningStore } from '../stores/learning'
 import { communityPosts } from '../data/community'
+import { aiApi } from '../api'
 import ProgressRing from '../components/ProgressRing.vue'
 
 const auth = useAuthStore()
 const growth = useGrowthStore()
 const learning = useLearningStore()
+const aiSuggestions = ref([])
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -30,6 +32,20 @@ const todayTasks = computed(() => {
   }
   tasks.push({ title: '完成今日学习打卡', meta: '打卡获得 10 成长积分', action: 'checkin', done: growth.checkedInToday })
   return tasks.slice(0, 3)
+})
+
+onMounted(async () => {
+  if (!growth.hasGoal) return
+  try {
+    const result = await aiApi.learningSuggest({
+      competencyProgress: growth.competencyProgress.map((c) => ({ name: c.name, progress: c.progress })),
+      nextMilestone: growth.nextMilestone?.name || '',
+      streak: growth.streak
+    })
+    aiSuggestions.value = result.suggestions || []
+  } catch {
+    aiSuggestions.value = []
+  }
 })
 </script>
 
@@ -125,9 +141,14 @@ const todayTasks = computed(() => {
         </section>
 
         <section class="card panel ai-panel">
-          <div class="panel-head"><div><h2>✨ AI 学习建议</h2><p>基于当前达成数据</p></div><router-link to="/review">补强中心 →</router-link></div>
-          <p v-if="growth.achievement === 0">从第一个 5 分钟微单元开始。一次掌握一个小知识点，通过快测后再进入下一步。</p>
-          <p v-else>当前最需要关注的是 <strong>{{ weakDomain?.name }}</strong>（{{ weakDomain?.progress }}%）。优先完成该能力域任务，并按间隔计划复习。</p>
+          <div class="panel-head"><div><h2>✨ AI 学习建议</h2><p>基于当前达成数据</p></div><router-link to="/chat">问 AI →</router-link></div>
+          <ul v-if="aiSuggestions.length" class="ai-suggest-list">
+            <li v-for="item in aiSuggestions" :key="item">{{ item }}</li>
+          </ul>
+          <template v-else>
+            <p v-if="growth.achievement === 0">从第一个 5 分钟微单元开始。一次掌握一个小知识点，通过快测后再进入下一步。</p>
+            <p v-else>当前最需要关注的是 <strong>{{ weakDomain?.name }}</strong>（{{ weakDomain?.progress }}%）。优先完成该能力域任务，并按间隔计划复习。</p>
+          </template>
           <div><span>基于达成度</span><span>关键路径优先</span><span>每日可完成</span></div>
         </section>
 
@@ -219,6 +240,7 @@ const todayTasks = computed(() => {
 .task > i { color: var(--text-3); font-size: 11px; font-style: normal; }
 .ai-panel { background: linear-gradient(140deg, #faf5ff, white); }
 .ai-panel > p { color: var(--text-2); font-size: 13px; }
+.ai-suggest-list { margin: 0 0 12px; padding-left: 18px; color: var(--text-2); font-size: 13px; line-height: 1.7; }
 .ai-panel > div:last-child { display: flex; gap: 6px; flex-wrap: wrap; }
 .ai-panel > div:last-child span { padding: 3px 7px; border: 1px solid #e9d5ff; border-radius: 99px; color: #7e22ce; font-size: 9px; }
 .points { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
