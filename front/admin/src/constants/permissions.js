@@ -21,5 +21,7 @@ export const PERM = {
   DOCUMENT_WRITE: 'document:write',
   DOCUMENT_DELETE: 'document:delete',
   DOCUMENT_IMPORT: 'document:import',
-  DOCUMENT_EXPORT: 'document:export'
+  DOCUMENT_EXPORT: 'document:export',
+  KNOWLEDGE_READ: 'knowledge:read',
+  KNOWLEDGE_MANAGE: 'knowledge:manage'
 }

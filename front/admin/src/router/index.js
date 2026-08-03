@@ -23,6 +23,7 @@ const routes = [
       { path: 'reviews', name: 'reviews', component: () => import('../views/ReviewView.vue'), meta: { title: '内容审核', roles: ['admin', 'reviewer'] } },
       { path: 'customers', name: 'customers', component: () => import('../views/CustomersView.vue'), meta: { title: '客户咨询', permissions: [PERM.CUSTOMER_READ] } },
       { path: 'documents', name: 'documents', component: () => import('../views/DocumentsView.vue'), meta: { title: '单据管理', permissions: [PERM.DOCUMENT_READ] } },
+      { path: 'knowledge', name: 'knowledge', component: () => import('../views/KnowledgeView.vue'), meta: { title: '知识库管理', permissions: [PERM.KNOWLEDGE_READ] } },
       { path: 'roles', name: 'roles', component: () => import('../views/RolesView.vue'), meta: { title: '权限管理', roles: ['admin'] } },
       { path: 'settings', name: 'settings', component: () => import('../views/SettingsView.vue'), meta: { title: '系统设置', roles: ['admin'] } }
     ]
@@ -35,7 +36,7 @@ const router = createRouter({
 })
 
 function firstAccessibleRoute(auth) {
-  const order = ['dashboard', 'users', 'customers', 'documents', 'courses', 'quizzes', 'reviews', 'roles']
+  const order = ['dashboard', 'users', 'customers', 'documents', 'knowledge', 'courses', 'quizzes', 'reviews', 'roles']
   for (const name of order) {
     const route = routes[1].children.find((r) => r.name === name)
     if (route?.meta?.permissions && auth.hasAnyPermission(route.meta.permissions)) {

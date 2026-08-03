@@ -37,6 +37,10 @@
           <el-icon><Ticket /></el-icon>
           <span>单据管理</span>
         </el-menu-item>
+        <el-menu-item v-if="auth.hasPermission(PERM.KNOWLEDGE_READ)" index="/knowledge">
+          <el-icon><Collection /></el-icon>
+          <span>知识库</span>
+        </el-menu-item>
         <el-menu-item v-if="auth.hasPermission(PERM.ROLE_MANAGE)" index="/roles">
           <el-icon><Lock /></el-icon>
           <span>权限管理</span>
