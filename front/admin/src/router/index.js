@@ -85,7 +85,7 @@ const routes = [
         path: 'chatgpt',
         name: 'chatgpt',
         component: () => import('../views/ChatGptView.vue'),
-        meta: { title: 'ChatGPT 对话', permissions: [PERM.AI_CHAT], fullBleed: true }
+        meta: { title: 'ChatGPT 对话', permissions: [PERM.AI_CHAT], chatgptFullscreen: true }
       },
       {
         path: 'ai-models',

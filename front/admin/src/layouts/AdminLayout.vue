@@ -1,5 +1,6 @@
 <template>
-  <el-container class="admin-layout">
+  <router-view v-if="route.meta.chatgptFullscreen" />
+  <el-container v-else class="admin-layout">
     <AdminSidebar
       v-show="!isMobile"
       :collapsed="collapsed"
