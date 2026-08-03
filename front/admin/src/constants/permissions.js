@@ -13,7 +13,6 @@ export const PERM = {
   REVIEW_READ: 'review:read',
   REVIEW_APPROVE: 'review:approve',
   DASHBOARD: 'dashboard:read',
-  ROLE_MANAGE: 'role:manage',
   AI_CHAT: 'ai:chat',
   CUSTOMER_READ: 'customer:read',
   CUSTOMER_REPLY: 'customer:reply',

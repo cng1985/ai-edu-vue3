@@ -48,7 +48,8 @@ import {
   Service,
   Ticket,
   Collection,
-  Setting
+  Setting,
+  Cpu
 } from '@element-plus/icons-vue'
 
 defineProps({
@@ -64,6 +65,7 @@ const groupIcons = {
   service: Service,
   documents: Ticket,
   knowledge: Collection,
+  ai: Cpu,
   system: Setting
 }
 

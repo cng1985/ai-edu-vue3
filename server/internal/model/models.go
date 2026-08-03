@@ -160,8 +160,10 @@ type AISource struct {
 }
 
 type ChatRequest struct {
-	Question string        `json:"question"`
-	History  []ChatMessage `json:"history,omitempty"`
+	Question     string        `json:"question"`
+	History      []ChatMessage `json:"history,omitempty"`
+	VirtualModel string        `json:"virtualModel,omitempty"`
+	Mode         string        `json:"mode,omitempty"` // rag（知识库增强）| chat（纯对话）
 }
 
 type ChatMessage struct {
@@ -170,8 +172,12 @@ type ChatMessage struct {
 }
 
 type ChatResult struct {
-	Text    string     `json:"text"`
-	Sources []AISource `json:"sources"`
+	Text           string     `json:"text"`
+	Sources        []AISource `json:"sources"`
+	Model          string     `json:"model,omitempty"`
+	Provider       string     `json:"provider,omitempty"`
+	VirtualModel   string     `json:"virtualModel,omitempty"`
+	CanonicalModel string     `json:"canonicalModel,omitempty"`
 }
 
 type CareerInterviewRequest struct {

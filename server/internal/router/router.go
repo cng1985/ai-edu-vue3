@@ -173,7 +173,7 @@ func NewEngine(
 			aiModels.PUT("/provider-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateProviderModel)
 			aiModels.DELETE("/provider-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteProviderModel)
 
-			aiModels.GET("/virtual-models", h.AiModel.ListVirtualModels)
+			aiModels.GET("/virtual-models/options", h.AiModel.ListVirtualModelOptions)
 			aiModels.POST("/virtual-models", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.CreateVirtualModel)
 			aiModels.PUT("/virtual-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.UpdateVirtualModel)
 			aiModels.DELETE("/virtual-models/:id", middleware.RequirePermission(rbac.PermAiModelManage), h.AiModel.DeleteVirtualModel)

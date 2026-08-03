@@ -66,7 +66,7 @@
         @navigate="onNavigate"
       />
 
-      <el-main class="admin-main">
+      <el-main class="admin-main" :class="{ 'admin-main--bleed': route.meta.fullBleed }">
         <router-view />
       </el-main>
     </el-container>
@@ -230,6 +230,11 @@ onUnmounted(() => {
   padding: 20px;
   background: #f0f2f5;
   min-height: calc(100vh - 96px);
+}
+
+.admin-main--bleed {
+  padding: 0;
+  background: #f8fafc;
 }
 
 @media (max-width: 900px) {

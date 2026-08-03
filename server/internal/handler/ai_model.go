@@ -369,6 +369,15 @@ func (h *AiModelHandler) UpdateVirtualModelMapping(c *gin.Context) {
 	response.OK(c, res, "更新成功")
 }
 
+func (h *AiModelHandler) ListVirtualModelOptions(c *gin.Context) {
+	list, err := h.svc.ListVirtualModelOptions()
+	if err != nil {
+		failErr(c, err)
+		return
+	}
+	response.OK(c, list)
+}
+
 func (h *AiModelHandler) DeleteVirtualModelMapping(c *gin.Context) {
 	if err := h.svc.DeleteVirtualModelMapping(c.Param("id")); err != nil {
 		failErr(c, err)

@@ -58,7 +58,7 @@ func (h *AIHandler) Chat(c *gin.Context) {
 		response.Fail(c, http.StatusBadRequest, 400, "请输入问题")
 		return
 	}
-	result, err := h.svc.Chat(c.Request.Context(), req.Question, req.History, nil)
+	result, err := h.svc.Chat(c.Request.Context(), req, nil)
 	if err != nil {
 		failErr(c, err)
 		return
@@ -80,7 +80,7 @@ func (h *AIHandler) ChatStream(c *gin.Context) {
 		response.Fail(c, http.StatusInternalServerError, 500, "不支持流式输出")
 		return
 	}
-	result, err := h.svc.Chat(c.Request.Context(), req.Question, req.History, func(token string) {
+	result, err := h.svc.Chat(c.Request.Context(), req, func(token string) {
 		data, _ := json.Marshal(gin.H{"type": "token", "content": token})
 		fmt.Fprintf(c.Writer, "data: %s\n\n", data)
 		flusher.Flush()
@@ -91,7 +91,15 @@ func (h *AIHandler) ChatStream(c *gin.Context) {
 		flusher.Flush()
 		return
 	}
-	done, _ := json.Marshal(gin.H{"type": "done", "text": result.Text, "sources": result.Sources})
+	done, _ := json.Marshal(gin.H{
+		"type": "done",
+		"text": result.Text,
+		"sources": result.Sources,
+		"model": result.Model,
+		"provider": result.Provider,
+		"virtualModel": result.VirtualModel,
+		"canonicalModel": result.CanonicalModel,
+	})
 	fmt.Fprintf(c.Writer, "data: %s\n\n", done)
 	flusher.Flush()
 }
