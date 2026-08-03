@@ -141,6 +141,8 @@ type ResolvedLLM struct {
 	ProviderCode       string `json:"providerCode"`
 	ModelCode          string `json:"modelCode"`
 	DeploymentName     string `json:"deploymentName,omitempty"`
+	ContextWindow      int    `json:"contextWindow,omitempty"`
+	ReasoningSupported bool   `json:"reasoningSupported"`
 	BaseURL            string `json:"baseUrl"`
 	APIKey             string `json:"-"`
 	AuthType           string `json:"-"`
@@ -159,16 +161,17 @@ type AiModelOverview struct {
 
 // AiModelQuickSetupRequest 一键初始化大模型分层配置。
 type AiModelQuickSetupRequest struct {
-	ProviderCode  string `json:"providerCode"`
-	ProviderName  string `json:"providerName"`
-	BaseURL       string `json:"baseUrl"`
-	APIKey        string `json:"apiKey"`
-	CanonicalCode string `json:"canonicalCode"`
-	CanonicalName string `json:"canonicalName"`
-	ModelCode     string `json:"modelCode"`
-	VirtualCode   string `json:"virtualCode"`
-	VirtualName   string `json:"virtualName"`
-	ContextWindow int    `json:"contextWindow"`
+	ProviderCode       string `json:"providerCode"`
+	ProviderName       string `json:"providerName"`
+	BaseURL            string `json:"baseUrl"`
+	APIKey             string `json:"apiKey"`
+	CanonicalCode      string `json:"canonicalCode"`
+	CanonicalName      string `json:"canonicalName"`
+	ModelCode          string `json:"modelCode"`
+	VirtualCode        string `json:"virtualCode"`
+	VirtualName        string `json:"virtualName"`
+	ContextWindow      int    `json:"contextWindow"`
+	ReasoningSupported bool   `json:"reasoningSupported"`
 }
 
 // SystemSettingsView 系统设置聚合视图（大模型分层模块 + 知识库）。

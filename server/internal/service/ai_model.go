@@ -751,13 +751,15 @@ func quickSetupChain(repo *repository.AiModelRepo, req model.AiModelQuickSetupRe
 		providerModel = &model.ProviderModel{
 			ID: genID("pm"), ProviderID: provider.ID, CanonicalModelID: canonical.ID,
 			ModelCode: req.ModelCode, Priority: 10, Weight: 100,
-			Status: 1, CreatedAt: now, UpdatedAt: now,
+			ReasoningSupported: req.ReasoningSupported,
+			Status:             1, CreatedAt: now, UpdatedAt: now,
 		}
 		if err := repo.CreateProviderModel(providerModel); err != nil {
 			return err
 		}
 	} else {
 		providerModel.Status = 1
+		providerModel.ReasoningSupported = req.ReasoningSupported
 		providerModel.UpdatedAt = now
 		if err := repo.UpdateProviderModel(providerModel); err != nil {
 			return err

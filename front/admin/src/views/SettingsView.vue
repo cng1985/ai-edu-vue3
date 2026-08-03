@@ -45,6 +45,9 @@
         <el-form-item label="上下文窗口">
           <el-input-number v-model="setupForm.contextWindow" :min="1" :step="1000" />
         </el-form-item>
+        <el-form-item label="推理模型">
+          <el-switch v-model="setupForm.reasoningSupported" />
+        </el-form-item>
         <el-form-item label="虚拟模型">
           <el-input v-model="setupForm.virtualCode" placeholder="chat-default" />
         </el-form-item>
@@ -113,6 +116,9 @@
         <el-descriptions-item label="统一模型">{{ resolved.canonicalModelCode }}</el-descriptions-item>
         <el-descriptions-item label="厂商">{{ resolved.providerCode }}</el-descriptions-item>
         <el-descriptions-item label="调用模型">{{ resolved.modelCode }}</el-descriptions-item>
+        <el-descriptions-item label="部署名">{{ resolved.deploymentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="上下文窗口">{{ resolved.contextWindow || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="推理能力">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</el-descriptions-item>
         <el-descriptions-item label="Base URL" :span="2">{{ resolved.baseUrl }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="resolved.enabled ? 'success' : 'danger'" size="small">
@@ -240,7 +246,8 @@ const PRESETS = {
     virtualCode: 'chat-default',
     virtualName: '默认对话模型',
     modelCode: 'gpt-4o-mini',
-    contextWindow: 128000
+    contextWindow: 128000,
+    reasoningSupported: false
   },
   deepseek: {
     providerCode: 'deepseek',
@@ -251,7 +258,8 @@ const PRESETS = {
     virtualCode: 'chat-default',
     virtualName: '默认对话模型',
     modelCode: 'deepseek-chat',
-    contextWindow: 64000
+    contextWindow: 64000,
+    reasoningSupported: false
   },
   custom: {
     providerCode: '',
@@ -262,7 +270,8 @@ const PRESETS = {
     virtualCode: 'chat-default',
     virtualName: '默认对话模型',
     modelCode: '',
-    contextWindow: 128000
+    contextWindow: 128000,
+    reasoningSupported: false
   }
 }
 
@@ -295,7 +304,8 @@ const setupForm = reactive({
   modelCode: '',
   virtualCode: 'chat-default',
   virtualName: '默认对话模型',
-  contextWindow: 128000
+  contextWindow: 128000,
+  reasoningSupported: false
 })
 
 const providersWithKey = computed(() => providers.value.filter((p) => p.apiKeyMasked).length)

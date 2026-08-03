@@ -125,7 +125,7 @@ func TestQuickSetupIsIdempotentAndUpdatesExistingChain(t *testing.T) {
 		ProviderCode: "custom", ProviderName: "Custom", BaseURL: "https://example.com/v1",
 		APIKey: "first-key", CanonicalCode: "chat", CanonicalName: "Chat",
 		ModelCode: "chat-v1", VirtualCode: "chat-default", VirtualName: "Default",
-		ContextWindow: 32000,
+		ContextWindow: 32000, ReasoningSupported: true,
 	}
 	if _, err := svc.QuickSetup(req); err != nil {
 		t.Fatal(err)
@@ -156,7 +156,7 @@ func TestQuickSetupIsIdempotentAndUpdatesExistingChain(t *testing.T) {
 	if provider.APIKey != "second-key" || canonical.Name != "Chat Updated" || canonical.ContextWindow != 64000 {
 		t.Fatalf("已有配置未更新: provider=%#v canonical=%#v", provider, canonical)
 	}
-	if len(providerModels) != 1 || len(mappings) != 1 {
+	if len(providerModels) != 1 || !providerModels[0].ReasoningSupported || len(mappings) != 1 {
 		t.Fatalf("重复初始化创建了重复记录: providerModels=%d mappings=%d", len(providerModels), len(mappings))
 	}
 }

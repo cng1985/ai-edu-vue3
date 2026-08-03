@@ -119,6 +119,8 @@ func (r *ModelRouter) resolveCanonical(canonicalModelID, virtualModelCode string
 			ProviderCode:       provider.Code,
 			ModelCode:          modelCode,
 			DeploymentName:     pm.DeploymentName,
+			ContextWindow:      canon.ContextWindow,
+			ReasoningSupported: pm.ReasoningSupported,
 			BaseURL:            baseURL,
 			APIKey:             apiKey,
 			AuthType:           provider.AuthType,

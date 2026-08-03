@@ -57,6 +57,9 @@
         <el-descriptions-item label="统一模型">{{ resolved.canonicalModelCode }}</el-descriptions-item>
         <el-descriptions-item label="厂商">{{ resolved.providerCode }}</el-descriptions-item>
         <el-descriptions-item label="调用模型">{{ resolved.modelCode }}</el-descriptions-item>
+        <el-descriptions-item label="部署名">{{ resolved.deploymentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="上下文窗口">{{ resolved.contextWindow || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="推理能力">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</el-descriptions-item>
         <el-descriptions-item label="Base URL">{{ resolved.baseUrl }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="resolved.enabled ? 'success' : 'info'" size="small">
