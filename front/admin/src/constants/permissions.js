@@ -23,5 +23,6 @@ export const PERM = {
   DOCUMENT_IMPORT: 'document:import',
   DOCUMENT_EXPORT: 'document:export',
   KNOWLEDGE_READ: 'knowledge:read',
-  KNOWLEDGE_MANAGE: 'knowledge:manage'
+  KNOWLEDGE_MANAGE: 'knowledge:manage',
+  SETTINGS_MANAGE: 'settings:manage'
 }
