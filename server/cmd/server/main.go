@@ -8,6 +8,7 @@ import (
 	"github.com/cng1985/ai-learning-server/internal/router"
 	"github.com/cng1985/ai-learning-server/internal/seed"
 	"github.com/cng1985/ai-learning-server/internal/service"
+	"github.com/cng1985/ai-learning-server/internal/ws"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 )
@@ -18,6 +19,7 @@ func main() {
 		database.Module,
 		repository.Module,
 		service.Module,
+		ws.Module,
 		handler.Module,
 		router.Module,
 		fx.Invoke(seed.Run),

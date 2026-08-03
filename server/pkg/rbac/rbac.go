@@ -18,6 +18,9 @@ const (
 	PermRoleManage  = "role:manage"
 	PermSettingsManage = "settings:manage"
 	PermAIChat      = "ai:chat"
+	PermCustomerChat  = "customer:chat"
+	PermCustomerRead  = "customer:read"
+	PermCustomerReply = "customer:reply"
 )
 
 var AllPermissions = []PermissionInfo{
@@ -37,6 +40,9 @@ var AllPermissions = []PermissionInfo{
 	{Code: PermRoleManage, Name: "权限管理", Group: "系统管理"},
 	{Code: PermSettingsManage, Name: "系统设置", Group: "系统管理"},
 	{Code: PermAIChat, Name: "AI 对话", Group: "AI 服务"},
+	{Code: PermCustomerChat, Name: "客户咨询", Group: "客户服务"},
+	{Code: PermCustomerRead, Name: "查看客户咨询", Group: "客户服务"},
+	{Code: PermCustomerReply, Name: "回复客户咨询", Group: "客户服务"},
 }
 
 type PermissionInfo struct {
@@ -53,6 +59,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermQuizRead, PermQuizWrite, PermQuizDelete,
 		PermReviewRead, PermReviewApprove,
 		PermDashboard, PermRoleManage, PermSettingsManage, PermAIChat,
+		PermCustomerRead, PermCustomerReply,
 	},
 	"reviewer": {
 		PermCourseRead, PermQuizRead,
@@ -63,9 +70,10 @@ var DefaultRolePermissions = map[string][]string{
 		PermCourseRead, PermCourseWrite,
 		PermQuizRead, PermQuizWrite,
 		PermDashboard, PermAIChat,
+		PermCustomerRead, PermCustomerReply,
 	},
 	"learner": {
-		PermCourseRead, PermQuizRead, PermAIChat,
+		PermCourseRead, PermQuizRead, PermAIChat, PermCustomerChat,
 	},
 	"guest": {
 		PermAIChat,

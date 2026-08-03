@@ -108,6 +108,18 @@ export const aiApi = {
   learningSuggest: (body) => request('/ai/learning/suggest', { method: 'POST', body: JSON.stringify(body) })
 }
 
+export const customerApi = {
+  listTickets: (params) => request('/app/support/tickets' + (params ? '?' + new URLSearchParams(params) : '')),
+  createTicket: (body) => request('/app/support/tickets', { method: 'POST', body: JSON.stringify(body) }),
+  getTicket: (id) => request(`/app/support/tickets/${id}`),
+  listMessages: (id, params) => {
+    const qs = params ? '?' + new URLSearchParams(params) : ''
+    return request(`/app/support/tickets/${id}/messages${qs}`)
+  },
+  sendMessage: (id, content) =>
+    request(`/app/support/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content }) })
+}
+
 export function saveSession(token, user) {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(SESSION_KEY, JSON.stringify({ ...user, isGuest: user.role === 'guest' }))

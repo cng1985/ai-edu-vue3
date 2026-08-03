@@ -29,6 +29,10 @@
           <el-icon><EditPen /></el-icon>
           <span>题库管理</span>
         </el-menu-item>
+        <el-menu-item v-if="auth.hasPermission(PERM.CUSTOMER_READ)" index="/customers">
+          <el-icon><Service /></el-icon>
+          <span>客户咨询</span>
+        </el-menu-item>
         <el-menu-item v-if="auth.hasPermission(PERM.ROLE_MANAGE)" index="/roles">
           <el-icon><Lock /></el-icon>
           <span>权限管理</span>

@@ -2,5 +2,6 @@
 export const PERM = {
   COURSE_READ: 'course:read',
   QUIZ_READ: 'quiz:read',
-  AI_CHAT: 'ai:chat'
+  AI_CHAT: 'ai:chat',
+  CUSTOMER_CHAT: 'customer:chat'
 }
