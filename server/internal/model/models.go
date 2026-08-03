@@ -160,10 +160,109 @@ type AISource struct {
 }
 
 type ChatRequest struct {
-	Question string `json:"question"`
+	Question string        `json:"question"`
+	History  []ChatMessage `json:"history,omitempty"`
+}
+
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
 
 type ChatResult struct {
 	Text    string     `json:"text"`
 	Sources []AISource `json:"sources"`
+}
+
+type CareerInterviewRequest struct {
+	Message string        `json:"message"`
+	History []ChatMessage `json:"history,omitempty"`
+}
+
+type CareerRecommendRequest struct {
+	Background  string `json:"background"`
+	Interest    string `json:"interest"`
+	Experience  string `json:"experience"`
+	WeeklyHours int    `json:"weeklyHours"`
+}
+
+type CareerRecommendation struct {
+	CareerID   string `json:"careerId"`
+	Name       string `json:"name"`
+	MatchScore int    `json:"matchScore"`
+	Reason     string `json:"reason"`
+}
+
+type CareerRecommendResult struct {
+	Summary         string                 `json:"summary"`
+	Recommendations []CareerRecommendation `json:"recommendations"`
+}
+
+type GoalDecomposeRequest struct {
+	CareerID      string `json:"careerId"`
+	CareerName    string `json:"careerName"`
+	BaseLevel     string `json:"baseLevel"`
+	WeeklyHours   int    `json:"weeklyHours"`
+	DurationWeeks int    `json:"durationWeeks"`
+}
+
+type LearningStage struct {
+	Name          string   `json:"name"`
+	DurationWeeks int      `json:"durationWeeks"`
+	Objectives    []string `json:"objectives"`
+	Topics        []string `json:"topics"`
+}
+
+type GoalDecomposeResult struct {
+	GoalName    string          `json:"goalName"`
+	Difficulty  string          `json:"difficulty"`
+	Stages      []LearningStage `json:"stages"`
+	Milestones  []string        `json:"milestones"`
+	AISummary   string          `json:"aiSummary"`
+	Suggestions []string        `json:"suggestions"`
+}
+
+type LearningSuggestRequest struct {
+	CompetencyProgress []CompetencyProgress `json:"competencyProgress"`
+	NextMilestone      string               `json:"nextMilestone"`
+	Streak             int                  `json:"streak"`
+}
+
+type CompetencyProgress struct {
+	Name     string `json:"name"`
+	Progress int    `json:"progress"`
+}
+
+type LearningSuggestResult struct {
+	Suggestions []string `json:"suggestions"`
+}
+
+type SystemSetting struct {
+	Key       string `gorm:"primaryKey;size:64" json:"key"`
+	Value     string `gorm:"type:text" json:"value"`
+	UpdatedAt int64  `json:"updatedAt"`
+}
+
+type SettingsView struct {
+	LLM       LLMSettingsView `json:"llm"`
+	UpdatedAt int64           `json:"updatedAt"`
+}
+
+type LLMSettingsView struct {
+	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+	APIKeyMasked     string `json:"apiKeyMasked,omitempty"`
+	BaseURL          string `json:"baseUrl"`
+	Model            string `json:"model"`
+	Enabled          bool   `json:"enabled"`
+	Source           string `json:"source"`
+}
+
+type SettingsUpdateRequest struct {
+	LLM LLMSettingsUpdate `json:"llm"`
+}
+
+type LLMSettingsUpdate struct {
+	APIKey  string `json:"apiKey"`
+	BaseURL string `json:"baseUrl"`
+	Model   string `json:"model"`
 }

@@ -63,6 +63,7 @@ var Module = fx.Provide(
 	NewQuizService,
 	NewReviewService,
 	NewDashboardService,
+	NewSettingsService,
 	NewAIService,
 	NewRBACService,
 )

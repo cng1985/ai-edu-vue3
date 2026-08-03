@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ask } from '../utils/aiEngine'
+import { aiApi } from '../api'
+import { ask as localAsk } from '../utils/aiEngine'
 
 const STORAGE_KEY = 'ai-learning-system:chat'
 
@@ -11,18 +12,33 @@ function loadMessages() {
   return []
 }
 
+function buildHistory(messages) {
+  return messages
+    .filter((m) => !m.streaming && m.text)
+    .slice(-16)
+    .map((m) => ({ role: m.role, content: m.text }))
+}
+
 let cancelStream = null
 
 export const useChatStore = defineStore('chat', {
   state: () => ({
-    // { id, role: 'user' | 'assistant', text, sources, streaming }
     messages: loadMessages(),
-    generating: false
+    generating: false,
+    aiConfig: null,
+    useBackend: true
   }),
 
   actions: {
+    async loadConfig() {
+      try {
+        this.aiConfig = await aiApi.config()
+      } catch {
+        this.aiConfig = { enabled: false, model: 'local', baseUrl: '' }
+      }
+    },
+
     persist() {
-      // 只持久化已完成的消息
       const done = this.messages.filter((m) => !m.streaming)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(done))
     },
@@ -50,7 +66,33 @@ export const useChatStore = defineStore('chat', {
       this.generating = true
       this.persist()
 
-      cancelStream = ask(text, {
+      const history = buildHistory(this.messages.slice(0, -2))
+      const handlers = {
+        onToken: (chunk) => {
+          reply.text += chunk
+        },
+        onDone: (result) => {
+          reply.text = result.text || reply.text
+          reply.sources = result.sources || []
+          reply.streaming = false
+          this.generating = false
+          cancelStream = null
+          this.persist()
+        },
+        onError: () => {
+          this.fallbackLocal(text, reply)
+        }
+      }
+
+      if (this.useBackend) {
+        cancelStream = aiApi.chatStream(text, history, handlers)
+      } else {
+        this.fallbackLocal(text, reply)
+      }
+    },
+
+    fallbackLocal(question, reply) {
+      cancelStream = localAsk(question, {
         onToken: (chunk) => {
           reply.text += chunk
         },

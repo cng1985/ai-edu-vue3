@@ -145,21 +145,22 @@ export const useGrowthStore = defineStore('growth', {
         reviewRecords: this.reviewRecords
       }))
     },
-    createGoal({ careerId = 'frontend', baseLevel, weeklyHours, durationWeeks }) {
+    createGoal({ careerId = 'frontend', baseLevel, weeklyHours, durationWeeks, aiDecompose = null }) {
       const weeks = Number(durationWeeks) || frontendPath.durationWeeks
       const deadline = new Date()
       deadline.setDate(deadline.getDate() + weeks * 7)
       this.goal = {
         id: `goal-${Date.now().toString(36)}`,
         careerId,
-        name: `${weeks} 周成为初级 Web 前端工程师`,
-        description: frontendPath.description,
+        name: aiDecompose?.goalName || `${weeks} 周成为初级 Web 前端工程师`,
+        description: aiDecompose?.aiSummary || frontendPath.description,
         baseLevel,
         weeklyHours: Number(weeklyHours),
         durationWeeks: weeks,
         deadline: deadline.toISOString().slice(0, 10),
         status: '进行中',
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        aiDecompose
       }
       this.award(20, '目标启航')
       this.persist()

@@ -22,6 +22,7 @@ type Handlers struct {
 	AI        *AIHandler
 	RBAC      *RBACHandler
 	App       *AppHandler
+	Settings  *SettingsHandler
 }
 
 type AuthHandler struct{ svc *service.AuthService }
@@ -34,11 +35,12 @@ type DashboardHandler struct{ svc *service.DashboardService }
 func NewHandlers(
 	auth *AuthHandler, users *UserHandler, courses *CourseHandler,
 	quizzes *QuizHandler, reviews *ReviewHandler, dashboard *DashboardHandler,
-	ai *AIHandler, rbac *RBACHandler, app *AppHandler,
+	ai *AIHandler, rbac *RBACHandler, app *AppHandler, settings *SettingsHandler,
 ) *Handlers {
 	return &Handlers{
 		Auth: auth, Users: users, Courses: courses, Quizzes: quizzes,
 		Reviews: reviews, Dashboard: dashboard, AI: ai, RBAC: rbac, App: app,
+		Settings: settings,
 	}
 }
 
@@ -54,7 +56,7 @@ func NewDashboardHandler(svc *service.DashboardService) *DashboardHandler {
 var Module = fx.Provide(
 	NewAuthHandler, NewUserHandler, NewCourseHandler,
 	NewQuizHandler, NewReviewHandler, NewDashboardHandler,
-	NewAIHandler, NewRBACHandler, NewAppHandler,
+	NewAIHandler, NewRBACHandler, NewAppHandler, NewSettingsHandler,
 	NewHandlers,
 )
 

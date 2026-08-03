@@ -9,23 +9,19 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/cng1985/ai-learning-server/internal/config"
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
-	"github.com/cng1985/ai-learning-server/pkg/llm"
 )
 
 type AIService struct {
-	courses *repository.CourseRepo
-	llm     *llm.Client
-	cfg     *config.Config
+	courses  *repository.CourseRepo
+	settings *SettingsService
 }
 
-func NewAIService(courses *repository.CourseRepo, cfg *config.Config) *AIService {
+func NewAIService(courses *repository.CourseRepo, settings *SettingsService) *AIService {
 	return &AIService{
-		courses: courses,
-		llm:     llm.NewClient(cfg.LLM.APIKey, cfg.LLM.BaseURL, cfg.LLM.Model),
-		cfg:     cfg,
+		courses:  courses,
+		settings: settings,
 	}
 }
 
@@ -33,7 +29,7 @@ type knowledgeChunk struct {
 	courseID, courseTitle, chapterID, chapterTitle, heading, text string
 }
 
-func (s *AIService) Chat(ctx context.Context, question string, onToken func(string)) (*model.ChatResult, error) {
+func (s *AIService) Chat(ctx context.Context, question string, history []model.ChatMessage, onToken func(string)) (*model.ChatResult, error) {
 	question = strings.TrimSpace(question)
 	if question == "" {
 		return nil, fmt.Errorf("问题不能为空")
@@ -44,11 +40,12 @@ func (s *AIService) Chat(ctx context.Context, question string, onToken func(stri
 	}
 	matched, sources := retrieve(chunks, question, 3)
 	contextText := buildContext(matched)
-	systemPrompt := "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文。如果知识库中没有相关信息，请诚实说明。"
+	systemPrompt := "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文 Markdown。如果知识库中没有相关信息，请诚实说明，并给出学习建议。"
 	userPrompt := fmt.Sprintf("参考知识库：\n%s\n\n用户问题：%s", contextText, question)
 
-	if s.llm.Enabled() {
-		full, err := s.llm.StreamChat(ctx, systemPrompt, userPrompt, onToken)
+	if s.settings.LLMClient().Enabled() {
+		messages := buildLLMMessages(systemPrompt, history, userPrompt)
+		full, err := s.settings.LLMClient().StreamMessages(ctx, messages, onToken)
 		if err != nil {
 			return nil, err
 		}
@@ -236,10 +233,13 @@ func localAnswer(question string, chunks []knowledgeChunk) string {
 
 // ConfigInfo 返回 AI 配置状态（不含密钥）
 func (s *AIService) ConfigInfo() map[string]interface{} {
+	cfg := s.settings.LLMConfig()
+	view := s.settings.GetView()
 	return map[string]interface{}{
-		"enabled": s.llm.Enabled(),
-		"model":   s.cfg.LLM.Model,
-		"baseUrl": s.cfg.LLM.BaseURL,
+		"enabled": cfg.Enabled,
+		"model":   cfg.Model,
+		"baseUrl": cfg.BaseURL,
+		"source":  view.LLM.Source,
 	}
 }
 

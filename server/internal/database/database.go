@@ -29,6 +29,7 @@ func NewDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.Quiz{},
 		&model.Review{},
 		&model.RolePermission{},
+		&model.SystemSetting{},
 	)
 }
 
