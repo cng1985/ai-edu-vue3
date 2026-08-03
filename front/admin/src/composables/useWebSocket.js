@@ -1,5 +1,4 @@
-import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
-import { useWebSocket } from '../composables/useWebSocket'
+import { ref, onUnmounted } from 'vue'
 
 const ADMIN_TOKEN_KEY = 'admin-token'
 
