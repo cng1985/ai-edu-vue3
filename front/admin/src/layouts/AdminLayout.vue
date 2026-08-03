@@ -33,6 +33,10 @@
           <el-icon><Lock /></el-icon>
           <span>权限管理</span>
         </el-menu-item>
+        <el-menu-item v-if="auth.isAdmin" index="/settings">
+          <el-icon><Setting /></el-icon>
+          <span>系统设置</span>
+        </el-menu-item>
         <el-menu-item v-if="auth.isReviewer" index="/reviews">
           <el-icon><DocumentChecked /></el-icon>
           <span>内容审核</span>

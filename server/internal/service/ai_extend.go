@@ -51,7 +51,7 @@ func (s *AIService) CareerInterview(ctx context.Context, message string, history
 每次只问 1-2 个问题，不要一次问太多。当信息足够时，总结并推荐 1-3 个 IT 职业方向（如前端、后端、数据分析、大模型应用等），说明匹配理由。
 使用中文 Markdown 输出。`
 
-	if s.llm.Enabled() {
+	if s.settings.LLMClient().Enabled() {
 		messages := []llm.Message{{Role: "system", Content: systemPrompt}}
 		for _, item := range trimHistory(history) {
 			if item.Role == "user" || item.Role == "assistant" {
@@ -59,7 +59,7 @@ func (s *AIService) CareerInterview(ctx context.Context, message string, history
 			}
 		}
 		messages = append(messages, llm.Message{Role: "user", Content: message})
-		return s.llm.StreamMessages(ctx, messages, onToken)
+		return s.settings.LLMClient().StreamMessages(ctx, messages, onToken)
 	}
 
 	reply := localCareerInterview(message, len(history))
@@ -84,7 +84,7 @@ func localCareerInterview(message string, historyLen int) string {
 
 // CareerRecommend 根据背景推荐职业方向
 func (s *AIService) CareerRecommend(ctx context.Context, req model.CareerRecommendRequest) (*model.CareerRecommendResult, error) {
-	if s.llm.Enabled() {
+	if s.settings.LLMClient().Enabled() {
 		prompt := fmt.Sprintf(`根据以下学习者信息，推荐 2-3 个 IT 职业方向。
 背景：%s
 兴趣：%s
@@ -94,7 +94,7 @@ func (s *AIService) CareerRecommend(ctx context.Context, req model.CareerRecomme
 请严格输出 JSON（不要 markdown 代码块）：
 {"summary":"一句话总结","recommendations":[{"careerId":"frontend|backend|data|llm","name":"职业名称","matchScore":85,"reason":"推荐理由"}]}`,
 			req.Background, req.Interest, req.Experience, req.WeeklyHours)
-		raw, err := s.llm.Complete(ctx, []llm.Message{
+		raw, err := s.settings.LLMClient().Complete(ctx, []llm.Message{
 			{Role: "system", Content: "你是 IT 职业规划师，只输出合法 JSON。"},
 			{Role: "user", Content: prompt},
 		})
@@ -141,7 +141,7 @@ func (s *AIService) GoalDecompose(ctx context.Context, req model.GoalDecomposeRe
 		req.DurationWeeks = 16
 	}
 
-	if s.llm.Enabled() {
+	if s.settings.LLMClient().Enabled() {
 		prompt := fmt.Sprintf(`为学习者分解学习目标，输出 JSON（不要 markdown 代码块）：
 职业：%s（%s）
 当前基础：%s
@@ -151,7 +151,7 @@ func (s *AIService) GoalDecompose(ctx context.Context, req model.GoalDecomposeRe
 格式：
 {"goalName":"目标名称","difficulty":"简单|中等|偏高","stages":[{"name":"阶段名","durationWeeks":4,"objectives":["目标"],"topics":["知识点"]}],"milestones":["里程碑"],"aiSummary":"总结","suggestions":["建议"]}`,
 			req.CareerName, req.CareerID, req.BaseLevel, req.WeeklyHours, req.DurationWeeks)
-		raw, err := s.llm.Complete(ctx, []llm.Message{
+		raw, err := s.settings.LLMClient().Complete(ctx, []llm.Message{
 			{Role: "system", Content: "你是 IT 学习路径规划师，只输出合法 JSON，阶段数 3-5 个。"},
 			{Role: "user", Content: prompt},
 		})
@@ -189,9 +189,9 @@ func localGoalDecompose(req model.GoalDecomposeRequest) *model.GoalDecomposeResu
 
 // LearningSuggest 生成个性化学习建议
 func (s *AIService) LearningSuggest(ctx context.Context, req model.LearningSuggestRequest) (*model.LearningSuggestResult, error) {
-	if s.llm.Enabled() {
+	if s.settings.LLMClient().Enabled() {
 		data, _ := json.Marshal(req)
-		raw, err := s.llm.Complete(ctx, []llm.Message{
+		raw, err := s.settings.LLMClient().Complete(ctx, []llm.Message{
 			{Role: "system", Content: "你是学习教练，根据学习数据给出 2-4 条简短中文建议。输出 JSON：{\"suggestions\":[\"建议1\",\"建议2\"]}"},
 			{Role: "user", Content: string(data)},
 		})

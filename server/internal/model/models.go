@@ -230,3 +230,33 @@ type CompetencyProgress struct {
 type LearningSuggestResult struct {
 	Suggestions []string `json:"suggestions"`
 }
+
+type SystemSetting struct {
+	Key       string `gorm:"primaryKey;size:64" json:"key"`
+	Value     string `gorm:"type:text" json:"value"`
+	UpdatedAt int64  `json:"updatedAt"`
+}
+
+type SettingsView struct {
+	LLM       LLMSettingsView `json:"llm"`
+	UpdatedAt int64           `json:"updatedAt"`
+}
+
+type LLMSettingsView struct {
+	APIKeyConfigured bool   `json:"apiKeyConfigured"`
+	APIKeyMasked     string `json:"apiKeyMasked,omitempty"`
+	BaseURL          string `json:"baseUrl"`
+	Model            string `json:"model"`
+	Enabled          bool   `json:"enabled"`
+	Source           string `json:"source"`
+}
+
+type SettingsUpdateRequest struct {
+	LLM LLMSettingsUpdate `json:"llm"`
+}
+
+type LLMSettingsUpdate struct {
+	APIKey  string `json:"apiKey"`
+	BaseURL string `json:"baseUrl"`
+	Model   string `json:"model"`
+}

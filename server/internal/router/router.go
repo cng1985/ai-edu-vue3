@@ -21,6 +21,7 @@ func NewEngine(
 	jwt *authutil.JWTManager,
 	h *handler.Handlers,
 	rbacSvc *service.RBACService,
+	settingsSvc *service.SettingsService,
 	lc fx.Lifecycle,
 ) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
@@ -118,6 +119,12 @@ func NewEngine(
 			roles.PUT("/:role", h.RBAC.UpdateRole)
 		}
 		admin.GET("/permissions", middleware.RequirePermission(rbac.PermRoleManage), h.RBAC.ListPermissions)
+
+		settings := admin.Group("/settings", middleware.RequirePermission(rbac.PermSettingsManage))
+		{
+			settings.GET("", h.Settings.Get)
+			settings.PUT("", h.Settings.Update)
+		}
 	}
 
 	lc.Append(fx.Hook{
@@ -127,10 +134,11 @@ func NewEngine(
 				fmt.Printf("🚀 API 服务已启动: http://localhost:%s\n", cfg.Port)
 				fmt.Println("   管理端: admin / admin123")
 				fmt.Println("   学员端: 支持 /auth/register /auth/login /auth/guest")
-				if cfg.LLM.Enabled {
-					fmt.Printf("   AI 大模型: 已启用 (%s)\n", cfg.LLM.Model)
+				llmCfg := settingsSvc.LLMConfig()
+				if llmCfg.Enabled {
+					fmt.Printf("   AI 大模型: 已启用 (%s)\n", llmCfg.Model)
 				} else {
-					fmt.Println("   AI 大模型: 本地模式（设置 LLM_API_KEY 启用）")
+					fmt.Println("   AI 大模型: 本地模式（管理端可配置或设置 LLM_API_KEY）")
 				}
 				if err := r.Run(addr); err != nil && err != http.ErrServerClosed {
 					panic(err)
