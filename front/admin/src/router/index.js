@@ -21,6 +21,7 @@ const routes = [
       { path: 'quizzes', name: 'quizzes', component: () => import('../views/QuizzesView.vue'), meta: { title: '题库管理' } },
       { path: 'quizzes/:id', name: 'quiz-edit', component: () => import('../views/QuizEditView.vue'), meta: { title: '测验编辑' } },
       { path: 'reviews', name: 'reviews', component: () => import('../views/ReviewView.vue'), meta: { title: '内容审核', roles: ['admin', 'reviewer'] } },
+      { path: 'customers', name: 'customers', component: () => import('../views/CustomersView.vue'), meta: { title: '客户咨询', permissions: [PERM.CUSTOMER_READ] } },
       { path: 'roles', name: 'roles', component: () => import('../views/RolesView.vue'), meta: { title: '权限管理', roles: ['admin'] } },
       { path: 'settings', name: 'settings', component: () => import('../views/SettingsView.vue'), meta: { title: '系统设置', roles: ['admin'] } }
     ]
@@ -33,7 +34,7 @@ const router = createRouter({
 })
 
 function firstAccessibleRoute(auth) {
-  const order = ['dashboard', 'users', 'courses', 'quizzes', 'reviews', 'roles']
+  const order = ['dashboard', 'users', 'customers', 'courses', 'quizzes', 'reviews', 'roles']
   for (const name of order) {
     const route = routes[1].children.find((r) => r.name === name)
     if (route?.meta?.permissions && auth.hasAnyPermission(route.meta.permissions)) {

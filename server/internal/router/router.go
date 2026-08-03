@@ -68,8 +68,21 @@ func NewEngine(
 			app.GET("/courses", middleware.RequirePermission(rbac.PermCourseRead), h.App.ListCourses)
 			app.GET("/courses/:id", middleware.RequirePermission(rbac.PermCourseRead), h.App.GetCourse)
 			app.GET("/quizzes/:id", middleware.RequirePermission(rbac.PermQuizRead), h.App.GetQuiz)
+
+			// 客户咨询
+			support := app.Group("/support", middleware.RequirePermission(rbac.PermCustomerChat))
+			{
+				support.POST("/tickets", h.Customer.CreateTicket)
+				support.GET("/tickets", h.Customer.ListMyTickets)
+				support.GET("/tickets/:id", h.Customer.GetTicket)
+				support.GET("/tickets/:id/messages", h.Customer.ListMessages)
+				support.POST("/tickets/:id/messages", h.Customer.SendMessage)
+			}
 		}
 	}
+
+	// WebSocket 客户咨询（需登录）
+	r.GET("/api/v1/ws/support", middleware.Auth(jwt), h.Customer.HandleWS)
 
 	// 管理端接口
 	admin := r.Group("/api/v1", middleware.Auth(jwt), middleware.RequireAdmin())
@@ -126,6 +139,17 @@ func NewEngine(
 		{
 			settings.GET("", h.Settings.Get)
 			settings.PUT("", h.Settings.Update)
+		}
+
+		// 客户咨询管理
+		customers := admin.Group("/customers", middleware.RequirePermission(rbac.PermCustomerRead))
+		{
+			customers.GET("/stats", h.Customer.AdminStats)
+			customers.GET("/tickets", h.Customer.AdminListTickets)
+			customers.GET("/tickets/:id", h.Customer.AdminGetTicket)
+			customers.GET("/tickets/:id/messages", h.Customer.AdminListMessages)
+			customers.POST("/tickets/:id/reply", middleware.RequirePermission(rbac.PermCustomerReply), h.Customer.AdminReply)
+			customers.PUT("/tickets/:id/status", middleware.RequirePermission(rbac.PermCustomerReply), h.Customer.AdminUpdateStatus)
 		}
 	}
 

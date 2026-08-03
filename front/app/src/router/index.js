@@ -76,6 +76,12 @@ const routes = [
     meta: { title: 'AI 学习助手', permissions: [PERM.AI_CHAT] }
   },
   {
+    path: '/support',
+    name: 'support',
+    component: () => import('../views/CustomerSupportView.vue'),
+    meta: { title: '客户咨询', permissions: [PERM.CUSTOMER_CHAT] }
+  },
+  {
     path: '/quiz',
     name: 'quiz-list',
     component: () => import('../views/QuizListView.vue'),

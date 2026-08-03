@@ -29,6 +29,7 @@ const navItems = [
   { to: '/review', icon: '🔍', label: '复习与补强' },
   { to: '/courses', icon: '📚', label: '全部课程', permission: PERM.COURSE_READ },
   { to: '/chat', icon: '💬', label: 'AI 学习助手', permission: PERM.AI_CHAT },
+  { to: '/support', icon: '🎧', label: '客户咨询', permission: PERM.CUSTOMER_CHAT },
   { to: '/quiz', icon: '📝', label: '知识测验', permission: PERM.QUIZ_READ },
   { to: '/stats', icon: '📊', label: '达成度报告' },
   { to: '/incentives', icon: '🏅', label: '成长激励' }

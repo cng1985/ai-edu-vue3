@@ -266,3 +266,38 @@ type LLMSettingsUpdate struct {
 	BaseURL string `json:"baseUrl"`
 	Model   string `json:"model"`
 }
+
+// CustomerTicket 客户咨询工单
+type CustomerTicket struct {
+	ID            string `gorm:"primaryKey;size:64" json:"id"`
+	UserID        string `gorm:"index;size:64" json:"userId"`
+	Subject       string `gorm:"size:200" json:"subject"`
+	Status        string `gorm:"size:20;index" json:"status"`
+	LastMessageAt int64  `json:"lastMessageAt"`
+	CreatedAt     int64  `json:"createdAt"`
+	UpdatedAt     int64  `json:"updatedAt"`
+	// 关联展示字段（非持久化）
+	UserNickname string `gorm:"-" json:"userNickname,omitempty"`
+	UserUsername string `gorm:"-" json:"userUsername,omitempty"`
+	LastMessage  string `gorm:"-" json:"lastMessage,omitempty"`
+	UnreadCount  int    `gorm:"-" json:"unreadCount,omitempty"`
+}
+
+// CustomerMessage 客户咨询消息
+type CustomerMessage struct {
+	ID         string `gorm:"primaryKey;size:64" json:"id"`
+	TicketID   string `gorm:"index;size:64" json:"ticketId"`
+	SenderID   string `gorm:"size:64" json:"senderId"`
+	SenderRole string `gorm:"size:20" json:"senderRole"`
+	Content    string `gorm:"type:text" json:"content"`
+	CreatedAt  int64  `json:"createdAt"`
+	// 关联展示字段
+	SenderNickname string `gorm:"-" json:"senderNickname,omitempty"`
+}
+
+type CustomerTicketStats struct {
+	Total   int64 `json:"total"`
+	Open    int64 `json:"open"`
+	Pending int64 `json:"pending"`
+	Closed  int64 `json:"closed"`
+}

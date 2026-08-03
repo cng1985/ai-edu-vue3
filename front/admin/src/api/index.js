@@ -83,4 +83,13 @@ export const reviewsApi = {
   reject: (id, comment) => api.post(`/reviews/${id}/reject`, { comment })
 }
 
+export const customersApi = {
+  stats: () => api.get('/customers/stats'),
+  listTickets: (params) => api.get('/customers/tickets', { params }),
+  getTicket: (id) => api.get(`/customers/tickets/${id}`),
+  listMessages: (id, params) => api.get(`/customers/tickets/${id}/messages`, { params }),
+  reply: (id, content) => api.post(`/customers/tickets/${id}/reply`, { content }),
+  updateStatus: (id, status) => api.put(`/customers/tickets/${id}/status`, { status })
+}
+
 export { settingsApi } from './settings.js'
