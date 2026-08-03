@@ -141,6 +141,15 @@ func NewEngine(
 			settings.PUT("", h.Settings.Update)
 		}
 
+		// 知识库管理
+		knowledge := admin.Group("/knowledge", middleware.RequirePermission(rbac.PermKnowledgeRead))
+		{
+			knowledge.GET("/status", h.Knowledge.Status)
+			knowledge.GET("/chunks", h.Knowledge.ListChunks)
+			knowledge.GET("/search", h.Knowledge.Search)
+			knowledge.POST("/reindex", middleware.RequirePermission(rbac.PermKnowledgeManage), h.Knowledge.Reindex)
+		}
+
 		// 客户咨询管理
 		customers := admin.Group("/customers", middleware.RequirePermission(rbac.PermCustomerRead))
 		{

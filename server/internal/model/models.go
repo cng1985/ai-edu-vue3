@@ -316,6 +316,49 @@ type Document struct {
 	UpdatedAt int64   `json:"updatedAt"`
 }
 
+// KnowledgeChunk 知识库向量块（嵌入式向量存储）
+type KnowledgeChunk struct {
+	ID           string `gorm:"primaryKey;size:64" json:"id"`
+	CourseID     string `gorm:"index;size:64" json:"courseId"`
+	CourseTitle  string `gorm:"size:200" json:"courseTitle"`
+	ChapterID    string `gorm:"index;size:64" json:"chapterId"`
+	ChapterTitle string `gorm:"size:200" json:"chapterTitle"`
+	Heading      string `gorm:"size:300" json:"heading"`
+	Text         string `gorm:"type:text" json:"text"`
+	ContentHash  string `gorm:"index;size:64" json:"contentHash"`
+	Embedding    []byte `gorm:"type:blob" json:"-"`
+	Dimensions   int    `json:"dimensions"`
+	EmbedModel   string `gorm:"size:64" json:"embedModel"`
+	UpdatedAt    int64  `json:"updatedAt"`
+}
+
+// KnowledgeIndexMeta 知识库索引元信息
+type KnowledgeIndexMeta struct {
+	Key        string `gorm:"primaryKey;size:64" json:"key"`
+	Value      string `gorm:"type:text" json:"value"`
+	UpdatedAt  int64  `json:"updatedAt"`
+}
+
+// KnowledgeStatus 知识库状态
+type KnowledgeStatus struct {
+	ChunkCount    int64  `json:"chunkCount"`
+	CourseCount   int64  `json:"courseCount"`
+	ChapterCount  int64  `json:"chapterCount"`
+	EmbedModel    string `json:"embedModel"`
+	EmbedSource   string `json:"embedSource"`
+	Dimensions    int    `json:"dimensions"`
+	LastIndexedAt int64  `json:"lastIndexedAt"`
+	IndexStatus   string `json:"indexStatus"`
+}
+
+// KnowledgeSearchResult 检索结果
+type KnowledgeSearchResult struct {
+	Chunk      KnowledgeChunk `json:"chunk"`
+	Score      float64        `json:"score"`
+	VectorScore float64       `json:"vectorScore"`
+	KeywordScore float64      `json:"keywordScore"`
+}
+
 // ImportTaskProgress Excel 导入任务进度
 type ImportTaskProgress struct {
 	TaskID   string   `json:"taskId"`

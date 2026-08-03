@@ -10,6 +10,7 @@ import (
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
 	"github.com/cng1985/ai-learning-server/pkg/authutil"
+	"github.com/cng1985/ai-learning-server/pkg/rbac"
 	"gorm.io/datatypes"
 )
 
@@ -176,20 +177,10 @@ func seedRolePermissions(roles *repository.RoleRepo) {
 			Role: role, Permissions: datatypes.JSON(b), UpdatedAt: time.Now().UnixMilli(),
 		})
 	}
-	defaults := map[string][]string{
-		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "settings:manage", "ai:chat", "customer:read", "customer:reply", "document:read", "document:write", "document:delete", "document:import", "document:export"},
-		"reviewer": {"course:read", "quiz:read", "review:read", "review:approve", "dashboard:read", "ai:chat"},
-		"operator": {"course:read", "course:write", "quiz:read", "quiz:write", "dashboard:read", "ai:chat", "customer:read", "customer:reply", "document:read", "document:write", "document:import", "document:export"},
-		"learner":  {"course:read", "quiz:read", "ai:chat", "customer:chat"},
-		"guest":    {"ai:chat"},
-	}
-	for role, perms := range defaults {
+	for role, perms := range rbac.DefaultRolePermissions {
 		existing, err := roles.FindByRole(role)
 		if err != nil {
 			importPerms(role, perms)
-			continue
-		}
-		if role != "admin" && role != "operator" && role != "learner" {
 			continue
 		}
 		var current []string

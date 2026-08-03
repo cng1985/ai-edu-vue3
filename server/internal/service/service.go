@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -29,9 +30,10 @@ type CourseService struct {
 }
 type QuizService struct{ quizzes *repository.QuizRepo }
 type ReviewService struct {
-	reviews *repository.ReviewRepo
-	courses *repository.CourseRepo
-	quizzes *repository.QuizRepo
+	reviews   *repository.ReviewRepo
+	courses   *repository.CourseRepo
+	quizzes   *repository.QuizRepo
+	knowledge *KnowledgeService
 }
 type DashboardService struct {
 	users   *repository.UserRepo
@@ -48,8 +50,8 @@ func NewCourseService(courses *repository.CourseRepo) *CourseService {
 	return &CourseService{courses: courses}
 }
 func NewQuizService(quizzes *repository.QuizRepo) *QuizService { return &QuizService{quizzes: quizzes} }
-func NewReviewService(reviews *repository.ReviewRepo, courses *repository.CourseRepo, quizzes *repository.QuizRepo) *ReviewService {
-	return &ReviewService{reviews: reviews, courses: courses, quizzes: quizzes}
+func NewReviewService(reviews *repository.ReviewRepo, courses *repository.CourseRepo, quizzes *repository.QuizRepo, knowledge *KnowledgeService) *ReviewService {
+	return &ReviewService{reviews: reviews, courses: courses, quizzes: quizzes, knowledge: knowledge}
 }
 func NewDashboardService(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *repository.QuizRepo, reviews *repository.ReviewRepo) *DashboardService {
 	return &DashboardService{users: users, courses: courses, quizzes: quizzes, reviews: reviews}
@@ -65,6 +67,7 @@ var Module = fx.Provide(
 	NewDashboardService,
 	NewSettingsService,
 	NewAIService,
+	NewKnowledgeService,
 	NewRBACService,
 	NewCustomerService,
 	NewDocumentService,
@@ -639,6 +642,9 @@ func (s *ReviewService) Approve(id, reviewerID, comment string) (*model.Review, 
 			ch.Status = "published"
 			ch.UpdatedAt = time.Now().UnixMilli()
 			_ = s.courses.UpdateChapter(ch)
+			if s.knowledge != nil {
+				_ = s.knowledge.IndexChapter(context.Background(), review.CourseID, review.TargetID)
+			}
 		}
 	} else if review.Type == "quiz" {
 		var question model.Question

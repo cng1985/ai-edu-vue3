@@ -25,6 +25,7 @@ type Handlers struct {
 	Settings  *SettingsHandler
 	Customer  *CustomerHandler
 	Document  *DocumentHandler
+	Knowledge *KnowledgeHandler
 }
 
 type AuthHandler struct{ svc *service.AuthService }
@@ -38,12 +39,12 @@ func NewHandlers(
 	auth *AuthHandler, users *UserHandler, courses *CourseHandler,
 	quizzes *QuizHandler, reviews *ReviewHandler, dashboard *DashboardHandler,
 	ai *AIHandler, rbac *RBACHandler, app *AppHandler, settings *SettingsHandler,
-	customer *CustomerHandler, document *DocumentHandler,
+	customer *CustomerHandler, document *DocumentHandler, knowledge *KnowledgeHandler,
 ) *Handlers {
 	return &Handlers{
 		Auth: auth, Users: users, Courses: courses, Quizzes: quizzes,
 		Reviews: reviews, Dashboard: dashboard, AI: ai, RBAC: rbac, App: app,
-		Settings: settings, Customer: customer, Document: document,
+		Settings: settings, Customer: customer, Document: document, Knowledge: knowledge,
 	}
 }
 
@@ -60,7 +61,7 @@ var Module = fx.Provide(
 	NewAuthHandler, NewUserHandler, NewCourseHandler,
 	NewQuizHandler, NewReviewHandler, NewDashboardHandler,
 	NewAIHandler, NewRBACHandler, NewAppHandler, NewSettingsHandler, NewCustomerHandler,
-	NewDocumentHandler,
+	NewDocumentHandler, NewKnowledgeHandler,
 	NewHandlers,
 )
 

@@ -26,6 +26,8 @@ const (
 	PermDocumentDelete = "document:delete"
 	PermDocumentImport = "document:import"
 	PermDocumentExport = "document:export"
+	PermKnowledgeRead  = "knowledge:read"
+	PermKnowledgeManage = "knowledge:manage"
 )
 
 var AllPermissions = []PermissionInfo{
@@ -53,6 +55,8 @@ var AllPermissions = []PermissionInfo{
 	{Code: PermDocumentDelete, Name: "删除单据", Group: "单据管理"},
 	{Code: PermDocumentImport, Name: "导入单据", Group: "单据管理"},
 	{Code: PermDocumentExport, Name: "导出单据", Group: "单据管理"},
+	{Code: PermKnowledgeRead, Name: "查看知识库", Group: "知识库"},
+	{Code: PermKnowledgeManage, Name: "管理知识库", Group: "知识库"},
 }
 
 type PermissionInfo struct {
@@ -71,11 +75,13 @@ var DefaultRolePermissions = map[string][]string{
 		PermDashboard, PermRoleManage, PermSettingsManage, PermAIChat,
 		PermCustomerRead, PermCustomerReply,
 		PermDocumentRead, PermDocumentWrite, PermDocumentDelete, PermDocumentImport, PermDocumentExport,
+		PermKnowledgeRead, PermKnowledgeManage,
 	},
 	"reviewer": {
 		PermCourseRead, PermQuizRead,
 		PermReviewRead, PermReviewApprove,
 		PermDashboard, PermAIChat,
+		PermKnowledgeRead,
 	},
 	"operator": {
 		PermCourseRead, PermCourseWrite,
@@ -83,6 +89,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermDashboard, PermAIChat,
 		PermCustomerRead, PermCustomerReply,
 		PermDocumentRead, PermDocumentWrite, PermDocumentImport, PermDocumentExport,
+		PermKnowledgeRead,
 	},
 	"learner": {
 		PermCourseRead, PermQuizRead, PermAIChat, PermCustomerChat,

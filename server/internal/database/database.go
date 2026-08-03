@@ -33,6 +33,8 @@ func NewDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.CustomerTicket{},
 		&model.CustomerMessage{},
 		&model.Document{},
+		&model.KnowledgeChunk{},
+		&model.KnowledgeIndexMeta{},
 	)
 }
 
