@@ -29,6 +29,30 @@ func (s *RBACService) ListPermissions() []rbac.PermissionInfo {
 	return rbac.AllPermissions
 }
 
+func (s *RBACService) GetRoleName(role string) string {
+	return roleNames[role]
+}
+
+func (s *RBACService) GetPermissions(role string) []string {
+	custom, _ := s.loadCustomMap()
+	perms := custom[role]
+	if perms == nil {
+		perms = rbac.DefaultRolePermissions[role]
+	}
+	if perms == nil {
+		return []string{}
+	}
+	return perms
+}
+
+func (s *RBACService) EnrichUser(user *model.User) model.AuthUser {
+	return model.AuthUser{
+		User:        *user,
+		Permissions: s.GetPermissions(user.Role),
+		RoleName:    s.GetRoleName(user.Role),
+	}
+}
+
 func (s *RBACService) ListRoles() ([]model.RoleInfo, error) {
 	custom, _ := s.loadCustomMap()
 	roles := []string{"admin", "reviewer", "operator", "learner", "guest"}

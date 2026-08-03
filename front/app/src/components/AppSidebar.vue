@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useLearningStore } from '../stores/learning'
 import { useAuthStore } from '../stores/auth'
 import { useGrowthStore } from '../stores/growth'
+import { PERM } from '../constants/permissions'
 
 defineProps({
   open: { type: Boolean, default: false }
@@ -26,12 +27,16 @@ const navItems = [
   { to: '/career', icon: '🧭', label: '职业与目标' },
   { to: '/path', icon: '🗺️', label: '学习路径' },
   { to: '/review', icon: '🔍', label: '复习与补强' },
-  { to: '/courses', icon: '📚', label: '全部课程' },
-  { to: '/chat', icon: '💬', label: 'AI 学习助手' },
-  { to: '/quiz', icon: '📝', label: '知识测验' },
+  { to: '/courses', icon: '📚', label: '全部课程', permission: PERM.COURSE_READ },
+  { to: '/chat', icon: '💬', label: 'AI 学习助手', permission: PERM.AI_CHAT },
+  { to: '/quiz', icon: '📝', label: '知识测验', permission: PERM.QUIZ_READ },
   { to: '/stats', icon: '📊', label: '达成度报告' },
   { to: '/incentives', icon: '🏅', label: '成长激励' }
 ]
+
+const visibleNavItems = computed(() =>
+  navItems.filter((item) => !item.permission || auth.hasPermission(item.permission))
+)
 
 const progress = computed(() => growth.hasGoal ? growth.achievement : learning.overallProgress)
 </script>
@@ -45,7 +50,7 @@ const progress = computed(() => growth.hasGoal ? growth.achievement : learning.o
 
     <nav class="sidebar__nav">
       <router-link
-        v-for="item in navItems"
+        v-for="item in visibleNavItems"
         :key="item.to"
         :to="item.to"
         class="sidebar__link"

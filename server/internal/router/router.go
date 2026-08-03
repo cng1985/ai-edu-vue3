@@ -46,6 +46,8 @@ func NewEngine(
 	authed := r.Group("/api/v1", middleware.Auth(jwt))
 	{
 		authed.GET("/auth/me", h.Auth.Me)
+		authed.GET("/auth/permissions", h.Auth.Permissions)
+		authed.POST("/auth/permissions/refresh", h.Auth.RefreshPermissions)
 
 		// AI 服务
 		ai := authed.Group("/ai", middleware.RequirePermission(rbac.PermAIChat))
@@ -132,7 +134,7 @@ func NewEngine(
 			addr := fmt.Sprintf(":%s", cfg.Port)
 			go func() {
 				fmt.Printf("🚀 API 服务已启动: http://localhost:%s\n", cfg.Port)
-				fmt.Println("   管理端: admin / admin123")
+				fmt.Println("   管理端: admin / admin123 | reviewer / review123 | operator / oper123")
 				fmt.Println("   学员端: 支持 /auth/register /auth/login /auth/guest")
 				llmCfg := settingsSvc.LLMConfig()
 				if llmCfg.Enabled {

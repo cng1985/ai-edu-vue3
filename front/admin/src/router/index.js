@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
 const routes = [
   {
@@ -31,16 +32,27 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to) => {
+function firstAccessibleRoute(auth) {
+  const order = ['dashboard', 'users', 'courses', 'quizzes', 'reviews', 'roles']
+  for (const name of order) {
+    const route = routes[1].children.find((r) => r.name === name)
+    if (route?.meta?.permissions && auth.hasAnyPermission(route.meta.permissions)) {
+      return { name }
+    }
+  }
+  return { name: 'login' }
+}
+
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
   if (!to.meta.public && !auth.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
   if (to.name === 'login' && auth.isLoggedIn) {
-    return { name: 'dashboard' }
+    return firstAccessibleRoute(auth)
   }
-  if (to.meta.roles && !to.meta.roles.includes(auth.user?.role)) {
-    return { name: 'dashboard' }
+  if (to.meta.permissions && !auth.hasAnyPermission(to.meta.permissions)) {
+    return firstAccessibleRoute(auth)
   }
 })
 

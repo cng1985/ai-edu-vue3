@@ -31,6 +31,7 @@
       <div class="login-hint">
         <p>演示账号：admin / admin123（管理员）</p>
         <p>审核账号：reviewer / review123（审核员）</p>
+        <p>运营账号：operator / oper123（运营）</p>
       </div>
     </div>
   </div>

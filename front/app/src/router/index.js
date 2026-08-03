@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
 const routes = [
   {
@@ -54,37 +55,37 @@ const routes = [
     path: '/courses',
     name: 'courses',
     component: () => import('../views/CoursesView.vue'),
-    meta: { title: '全部课程' }
+    meta: { title: '全部课程', permissions: [PERM.COURSE_READ] }
   },
   {
     path: '/courses/:courseId',
     name: 'course-detail',
     component: () => import('../views/CourseDetailView.vue'),
-    meta: { title: '课程详情' }
+    meta: { title: '课程详情', permissions: [PERM.COURSE_READ] }
   },
   {
     path: '/courses/:courseId/:chapterId',
     name: 'lesson',
     component: () => import('../views/LessonView.vue'),
-    meta: { title: '章节学习' }
+    meta: { title: '章节学习', permissions: [PERM.COURSE_READ] }
   },
   {
     path: '/chat',
     name: 'chat',
     component: () => import('../views/ChatView.vue'),
-    meta: { title: 'AI 学习助手' }
+    meta: { title: 'AI 学习助手', permissions: [PERM.AI_CHAT] }
   },
   {
     path: '/quiz',
     name: 'quiz-list',
     component: () => import('../views/QuizListView.vue'),
-    meta: { title: '知识测验' }
+    meta: { title: '知识测验', permissions: [PERM.QUIZ_READ] }
   },
   {
     path: '/quiz/:quizId',
     name: 'quiz',
     component: () => import('../views/QuizView.vue'),
-    meta: { title: '测验' }
+    meta: { title: '测验', permissions: [PERM.QUIZ_READ] }
   },
   {
     path: '/stats',
@@ -111,9 +112,11 @@ router.beforeEach((to) => {
   if (!to.meta.public && !auth.isLoggedIn) {
     return { path: '/login', query: { redirect: to.fullPath } }
   }
-  // 已登录用户访问登录/注册页时直接回首页
   if (to.meta.public && auth.isLoggedIn) {
     return { path: '/' }
+  }
+  if (to.meta.permissions && !auth.hasAnyPermission(to.meta.permissions)) {
+    return { path: '/', query: { denied: to.name } }
   }
 })
 

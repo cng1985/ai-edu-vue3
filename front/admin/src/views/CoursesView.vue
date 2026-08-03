@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h2>课程管理</h2>
-      <el-button type="primary" :icon="Plus" @click="openDialog()">新增课程</el-button>
+      <el-button v-permission="PERM.COURSE_WRITE" type="primary" :icon="Plus" @click="openDialog()">新增课程</el-button>
     </div>
 
     <el-card shadow="never">
@@ -40,8 +40,8 @@
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="$router.push(`/courses/${row.id}`)">编辑</el-button>
-            <el-button link @click="openDialog(row)">设置</el-button>
-            <el-popconfirm title="确定删除该课程？" @confirm="handleDelete(row.id)">
+            <el-button v-permission="PERM.COURSE_WRITE" link @click="openDialog(row)">设置</el-button>
+            <el-popconfirm v-if="auth.hasPermission(PERM.COURSE_DELETE)" title="确定删除该课程？" @confirm="handleDelete(row.id)">
               <template #reference>
                 <el-button link type="danger">删除</el-button>
               </template>
@@ -102,7 +102,10 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { coursesApi } from '../api'
+import { useAuthStore } from '../stores/auth'
+import { PERM } from '../constants/permissions'
 
+const auth = useAuthStore()
 const loading = ref(false)
 const saving = ref(false)
 const list = ref([])
