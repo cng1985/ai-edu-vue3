@@ -82,6 +82,12 @@ const routes = [
         meta: { title: '权限管理', permissions: [PERM.ROLE_MANAGE] }
       },
       {
+        path: 'chatgpt',
+        name: 'chatgpt',
+        component: () => import('../views/ChatGptView.vue'),
+        meta: { title: 'ChatGPT 对话', permissions: [PERM.AI_CHAT], chatgptFullscreen: true }
+      },
+      {
         path: 'ai-models',
         name: 'ai-models',
         component: () => import('../views/AiModelsView.vue'),

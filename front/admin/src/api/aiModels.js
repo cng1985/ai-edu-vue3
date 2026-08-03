@@ -31,6 +31,7 @@ export const aiModelsApi = {
   deleteProviderModel: (id) => api.delete(`/ai-models/provider-models/${id}`),
 
   listVirtualModels: (params) => api.get('/ai-models/virtual-models', { params }),
+  listVirtualModelOptions: () => api.get('/ai-models/virtual-models/options'),
   createVirtualModel: (data) => api.post('/ai-models/virtual-models', data),
   updateVirtualModel: (id, data) => api.put(`/ai-models/virtual-models/${id}`, data),
   deleteVirtualModel: (id) => api.delete(`/ai-models/virtual-models/${id}`),

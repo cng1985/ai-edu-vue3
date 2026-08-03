@@ -24,33 +24,65 @@ func NewAIService(courses *repository.CourseRepo, settings *SettingsService, kno
 	}
 }
 
-func (s *AIService) Chat(ctx context.Context, question string, history []model.ChatMessage, onToken func(string)) (*model.ChatResult, error) {
-	question = strings.TrimSpace(question)
+func (s *AIService) Chat(ctx context.Context, req model.ChatRequest, onToken func(string)) (*model.ChatResult, error) {
+	question := strings.TrimSpace(req.Question)
 	if question == "" {
 		return nil, fmt.Errorf("问题不能为空")
 	}
 
-	_ = s.knowledge.EnsureIndexed(ctx)
-
-	results, err := s.knowledge.Search(ctx, question, 0)
-	if err != nil {
-		return nil, err
+	mode := strings.ToLower(strings.TrimSpace(req.Mode))
+	if mode == "" {
+		mode = "rag"
 	}
-	sources := ToAISources(results)
-	contextText := BuildContextFromResults(results)
 
-	systemPrompt := "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文 Markdown。如果知识库中没有相关信息，请诚实说明，并给出学习建议。"
-	userPrompt := fmt.Sprintf("参考知识库：\n%s\n\n用户问题：%s", contextText, question)
+	var sources []model.AISource
+	var systemPrompt string
+	var userPrompt string
 
-	if s.settings.LLMClient().Enabled() {
-		messages := buildLLMMessages(systemPrompt, history, userPrompt)
-		full, err := s.settings.LLMClient().StreamMessages(ctx, messages, onToken)
+	if mode == "chat" {
+		systemPrompt = "你是 ChatGPT 风格的智能助手，回答准确、简洁，使用中文 Markdown。可以进行通用对话、代码解释、文案撰写等任务。"
+		userPrompt = question
+	} else {
+		_ = s.knowledge.EnsureIndexed(ctx)
+		results, err := s.knowledge.Search(ctx, question, 0)
 		if err != nil {
 			return nil, err
 		}
-		return &model.ChatResult{Text: full, Sources: sources}, nil
+		sources = ToAISources(results)
+		contextText := BuildContextFromResults(results)
+		systemPrompt = "你是 AI 学习助手，基于提供的课程知识库回答用户问题。回答要准确、简洁，使用中文 Markdown。如果知识库中没有相关信息，请诚实说明，并给出学习建议。"
+		userPrompt = fmt.Sprintf("参考知识库：\n%s\n\n用户问题：%s", contextText, question)
 	}
 
+	client, resolved, err := s.settings.LLMClientFor(req.VirtualModel)
+	if err == nil && client != nil && client.Enabled() {
+		messages := buildLLMMessages(systemPrompt, req.History, userPrompt)
+		full, err := client.StreamMessages(ctx, messages, onToken)
+		if err != nil {
+			return nil, err
+		}
+		result := &model.ChatResult{Text: full, Sources: sources}
+		if resolved != nil {
+			result.Model = resolved.ModelCode
+			result.Provider = resolved.ProviderCode
+			result.VirtualModel = resolved.VirtualModelCode
+			result.CanonicalModel = resolved.CanonicalModelCode
+		}
+		return result, nil
+	}
+
+	if mode == "chat" {
+		answer := localChatAnswer(question)
+		for _, ch := range answer {
+			if onToken != nil {
+				onToken(string(ch))
+			}
+			time.Sleep(15 * time.Millisecond)
+		}
+		return &model.ChatResult{Text: answer, Sources: sources}, nil
+	}
+
+	results, _ := s.knowledge.Search(ctx, question, 0)
 	answer := localAnswerFromResults(question, results)
 	for _, ch := range answer {
 		if onToken != nil {
@@ -59,6 +91,15 @@ func (s *AIService) Chat(ctx context.Context, question string, history []model.C
 		time.Sleep(15 * time.Millisecond)
 	}
 	return &model.ChatResult{Text: answer, Sources: sources}, nil
+}
+
+func localChatAnswer(question string) string {
+	return fmt.Sprintf(
+		"当前处于**本地模式**（未配置 API Key 或模型路由不可用）。\n\n"+
+			"你问的是：「%s」\n\n"+
+			"请在管理端 **AI 大模型配置** 中为厂商填写 API Key，或在 **系统设置** 中配置 `LLM_API_KEY` 后重试。",
+		question,
+	)
 }
 
 func localAnswerFromResults(question string, results []model.KnowledgeSearchResult) string {
@@ -86,10 +127,10 @@ func (s *AIService) ConfigInfo() map[string]interface{} {
 	view := s.settings.GetView()
 	kbStatus, _ := s.knowledge.Status()
 	out := map[string]interface{}{
-		"enabled": cfg.Enabled,
-		"model":   cfg.Model,
-		"baseUrl": cfg.BaseURL,
-		"source":  view.LLM.Source,
+		"enabled":       cfg.Enabled,
+		"model":         cfg.Model,
+		"baseUrl":       cfg.BaseURL,
+		"source":        view.LLM.Source,
 		"knowledgeBase": kbStatus,
 	}
 	if s.settings.DefaultVirtualModel() != "" {

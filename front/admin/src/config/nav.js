@@ -105,6 +105,28 @@ export const NAV_GROUPS = [
     ]
   },
   {
+    key: 'ai',
+    title: 'AI 服务',
+    items: [
+      {
+        path: '/chatgpt',
+        name: 'chatgpt',
+        title: 'ChatGPT 对话',
+        icon: 'ChatDotRound',
+        permission: PERM.AI_CHAT,
+        keywords: ['ChatGPT', '对话', '聊天', 'AI']
+      },
+      {
+        path: '/ai-models',
+        name: 'ai-models',
+        title: '大模型配置',
+        icon: 'Cpu',
+        permission: PERM.AI_MODEL_READ,
+        keywords: ['AI', '模型', '大模型', 'LLM', '配置']
+      }
+    ]
+  },
+  {
     key: 'system',
     title: '系统管理',
     items: [
@@ -115,14 +137,6 @@ export const NAV_GROUPS = [
         icon: 'Lock',
         permission: PERM.ROLE_MANAGE,
         keywords: ['权限', '角色', 'role']
-      },
-      {
-        path: '/ai-models',
-        name: 'ai-models',
-        title: 'AI 大模型配置',
-        icon: 'Cpu',
-        permission: PERM.AI_MODEL_READ,
-        keywords: ['AI', '模型', '大模型', 'LLM']
       },
       {
         path: '/settings',
