@@ -32,6 +32,7 @@ func NewDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.SystemSetting{},
 		&model.CustomerTicket{},
 		&model.CustomerMessage{},
+		&model.Document{},
 	)
 }
 

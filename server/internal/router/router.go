@@ -151,6 +151,20 @@ func NewEngine(
 			customers.POST("/tickets/:id/reply", middleware.RequirePermission(rbac.PermCustomerReply), h.Customer.AdminReply)
 			customers.PUT("/tickets/:id/status", middleware.RequirePermission(rbac.PermCustomerReply), h.Customer.AdminUpdateStatus)
 		}
+
+		// 单据管理
+		documents := admin.Group("/documents", middleware.RequirePermission(rbac.PermDocumentRead))
+		{
+			documents.GET("", h.Document.List)
+			documents.GET("/export", middleware.RequirePermission(rbac.PermDocumentExport), h.Document.Export)
+			documents.GET("/import/template", middleware.RequirePermission(rbac.PermDocumentImport), h.Document.ExportTemplate)
+			documents.POST("/import", middleware.RequirePermission(rbac.PermDocumentImport), h.Document.Import)
+			documents.GET("/import/:taskId/progress", middleware.RequirePermission(rbac.PermDocumentImport), h.Document.ImportProgress)
+			documents.GET("/:id", h.Document.Get)
+			documents.POST("", middleware.RequirePermission(rbac.PermDocumentWrite), h.Document.Create)
+			documents.PUT("/:id", middleware.RequirePermission(rbac.PermDocumentWrite), h.Document.Update)
+			documents.DELETE("/:id", middleware.RequirePermission(rbac.PermDocumentDelete), h.Document.Delete)
+		}
 	}
 
 	lc.Append(fx.Hook{

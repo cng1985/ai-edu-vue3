@@ -67,6 +67,7 @@ var Module = fx.Provide(
 	NewAIService,
 	NewRBACService,
 	NewCustomerService,
+	NewDocumentService,
 )
 
 func genID(prefix string) string {

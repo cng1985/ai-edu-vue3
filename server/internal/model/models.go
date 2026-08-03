@@ -301,3 +301,29 @@ type CustomerTicketStats struct {
 	Pending int64 `json:"pending"`
 	Closed  int64 `json:"closed"`
 }
+
+// Document 业务单据
+type Document struct {
+	ID        string  `gorm:"primaryKey;size:64" json:"id"`
+	DocNo     string  `gorm:"uniqueIndex;size:50" json:"docNo"`
+	Title     string  `gorm:"size:200" json:"title"`
+	Type      string  `gorm:"size:30;index" json:"type"`
+	Amount    float64 `json:"amount"`
+	Status    string  `gorm:"size:20;index" json:"status"`
+	Remark    string  `gorm:"type:text" json:"remark"`
+	CreatedBy string  `gorm:"size:50" json:"createdBy"`
+	CreatedAt int64   `json:"createdAt"`
+	UpdatedAt int64   `json:"updatedAt"`
+}
+
+// ImportTaskProgress Excel 导入任务进度
+type ImportTaskProgress struct {
+	TaskID   string   `json:"taskId"`
+	Status   string   `json:"status"` // pending, processing, completed, failed
+	Total    int      `json:"total"`
+	Current  int      `json:"current"`
+	Success  int      `json:"success"`
+	Failed   int      `json:"failed"`
+	Errors   []string `json:"errors,omitempty"`
+	Message  string   `json:"message,omitempty"`
+}

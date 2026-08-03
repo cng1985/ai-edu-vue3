@@ -16,5 +16,10 @@ export const PERM = {
   ROLE_MANAGE: 'role:manage',
   AI_CHAT: 'ai:chat',
   CUSTOMER_READ: 'customer:read',
-  CUSTOMER_REPLY: 'customer:reply'
+  CUSTOMER_REPLY: 'customer:reply',
+  DOCUMENT_READ: 'document:read',
+  DOCUMENT_WRITE: 'document:write',
+  DOCUMENT_DELETE: 'document:delete',
+  DOCUMENT_IMPORT: 'document:import',
+  DOCUMENT_EXPORT: 'document:export'
 }

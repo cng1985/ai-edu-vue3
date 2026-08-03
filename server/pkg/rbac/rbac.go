@@ -21,6 +21,11 @@ const (
 	PermCustomerChat  = "customer:chat"
 	PermCustomerRead  = "customer:read"
 	PermCustomerReply = "customer:reply"
+	PermDocumentRead   = "document:read"
+	PermDocumentWrite  = "document:write"
+	PermDocumentDelete = "document:delete"
+	PermDocumentImport = "document:import"
+	PermDocumentExport = "document:export"
 )
 
 var AllPermissions = []PermissionInfo{
@@ -43,6 +48,11 @@ var AllPermissions = []PermissionInfo{
 	{Code: PermCustomerChat, Name: "客户咨询", Group: "客户服务"},
 	{Code: PermCustomerRead, Name: "查看客户咨询", Group: "客户服务"},
 	{Code: PermCustomerReply, Name: "回复客户咨询", Group: "客户服务"},
+	{Code: PermDocumentRead, Name: "查看单据", Group: "单据管理"},
+	{Code: PermDocumentWrite, Name: "编辑单据", Group: "单据管理"},
+	{Code: PermDocumentDelete, Name: "删除单据", Group: "单据管理"},
+	{Code: PermDocumentImport, Name: "导入单据", Group: "单据管理"},
+	{Code: PermDocumentExport, Name: "导出单据", Group: "单据管理"},
 }
 
 type PermissionInfo struct {
@@ -60,6 +70,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermReviewRead, PermReviewApprove,
 		PermDashboard, PermRoleManage, PermSettingsManage, PermAIChat,
 		PermCustomerRead, PermCustomerReply,
+		PermDocumentRead, PermDocumentWrite, PermDocumentDelete, PermDocumentImport, PermDocumentExport,
 	},
 	"reviewer": {
 		PermCourseRead, PermQuizRead,
@@ -71,6 +82,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermQuizRead, PermQuizWrite,
 		PermDashboard, PermAIChat,
 		PermCustomerRead, PermCustomerReply,
+		PermDocumentRead, PermDocumentWrite, PermDocumentImport, PermDocumentExport,
 	},
 	"learner": {
 		PermCourseRead, PermQuizRead, PermAIChat, PermCustomerChat,
