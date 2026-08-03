@@ -14,6 +14,9 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (res) => {
+    if (res.config.responseType === 'blob') {
+      return res
+    }
     const { code, message, data } = res.data
     if (code !== 0) {
       ElMessage.error(message || '请求失败')
@@ -90,6 +93,42 @@ export const customersApi = {
   listMessages: (id, params) => api.get(`/customers/tickets/${id}/messages`, { params }),
   reply: (id, content) => api.post(`/customers/tickets/${id}/reply`, { content }),
   updateStatus: (id, status) => api.put(`/customers/tickets/${id}/status`, { status })
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export const documentsApi = {
+  list: (params) => api.get('/documents', { params }),
+  get: (id) => api.get(`/documents/${id}`),
+  create: (data) => api.post('/documents', data),
+  update: (id, data) => api.put(`/documents/${id}`, data),
+  remove: (id) => api.delete(`/documents/${id}`),
+  exportExcel: async (params) => {
+    const res = await api.get('/documents/export', { params, responseType: 'blob' })
+    const disposition = res.headers?.['content-disposition'] || ''
+    const match = disposition.match(/filename\*=UTF-8''(.+)/)
+    const filename = match ? decodeURIComponent(match[1]) : '单据导出.xlsx'
+    downloadBlob(res.data, filename)
+  },
+  downloadTemplate: async () => {
+    const res = await api.get('/documents/import/template', { responseType: 'blob' })
+    downloadBlob(res.data, '单据导入模板.xlsx')
+  },
+  importExcel: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/documents/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  importProgress: (taskId) => api.get(`/documents/import/${taskId}/progress`)
 }
 
 export { settingsApi } from './settings.js'

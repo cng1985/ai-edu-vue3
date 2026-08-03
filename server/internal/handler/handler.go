@@ -24,6 +24,7 @@ type Handlers struct {
 	App       *AppHandler
 	Settings  *SettingsHandler
 	Customer  *CustomerHandler
+	Document  *DocumentHandler
 }
 
 type AuthHandler struct{ svc *service.AuthService }
@@ -37,12 +38,12 @@ func NewHandlers(
 	auth *AuthHandler, users *UserHandler, courses *CourseHandler,
 	quizzes *QuizHandler, reviews *ReviewHandler, dashboard *DashboardHandler,
 	ai *AIHandler, rbac *RBACHandler, app *AppHandler, settings *SettingsHandler,
-	customer *CustomerHandler,
+	customer *CustomerHandler, document *DocumentHandler,
 ) *Handlers {
 	return &Handlers{
 		Auth: auth, Users: users, Courses: courses, Quizzes: quizzes,
 		Reviews: reviews, Dashboard: dashboard, AI: ai, RBAC: rbac, App: app,
-		Settings: settings, Customer: customer,
+		Settings: settings, Customer: customer, Document: document,
 	}
 }
 
@@ -59,6 +60,7 @@ var Module = fx.Provide(
 	NewAuthHandler, NewUserHandler, NewCourseHandler,
 	NewQuizHandler, NewReviewHandler, NewDashboardHandler,
 	NewAIHandler, NewRBACHandler, NewAppHandler, NewSettingsHandler, NewCustomerHandler,
+	NewDocumentHandler,
 	NewHandlers,
 )
 
@@ -77,7 +79,7 @@ func failErr(c *gin.Context, err error) {
 		code = http.StatusForbidden
 	case "该用户名已被注册":
 		code = http.StatusBadRequest
-	case "用户不存在", "课程不存在", "课程不存在或未发布", "章节不存在", "测验不存在", "审核记录不存在", "角色不存在", "工单不存在":
+	case "用户不存在", "课程不存在", "课程不存在或未发布", "章节不存在", "测验不存在", "审核记录不存在", "角色不存在", "工单不存在", "单据不存在", "导入任务不存在或已过期":
 		code = http.StatusNotFound
 	}
 	response.Fail(c, code, code, err.Error())

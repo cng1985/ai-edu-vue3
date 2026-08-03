@@ -177,9 +177,9 @@ func seedRolePermissions(roles *repository.RoleRepo) {
 		})
 	}
 	defaults := map[string][]string{
-		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "settings:manage", "ai:chat", "customer:read", "customer:reply"},
+		"admin":    {"user:read", "user:create", "user:update", "user:delete", "course:read", "course:write", "course:delete", "quiz:read", "quiz:write", "quiz:delete", "review:read", "review:approve", "dashboard:read", "role:manage", "settings:manage", "ai:chat", "customer:read", "customer:reply", "document:read", "document:write", "document:delete", "document:import", "document:export"},
 		"reviewer": {"course:read", "quiz:read", "review:read", "review:approve", "dashboard:read", "ai:chat"},
-		"operator": {"course:read", "course:write", "quiz:read", "quiz:write", "dashboard:read", "ai:chat", "customer:read", "customer:reply"},
+		"operator": {"course:read", "course:write", "quiz:read", "quiz:write", "dashboard:read", "ai:chat", "customer:read", "customer:reply", "document:read", "document:write", "document:import", "document:export"},
 		"learner":  {"course:read", "quiz:read", "ai:chat", "customer:chat"},
 		"guest":    {"ai:chat"},
 	}
