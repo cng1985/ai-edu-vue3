@@ -5,7 +5,8 @@ import {
   Service,
   Ticket,
   Collection,
-  Setting
+  Setting,
+  Cpu
 } from '@element-plus/icons-vue'
 
 export const GROUP_ICONS = {
@@ -15,6 +16,7 @@ export const GROUP_ICONS = {
   service: Service,
   documents: Ticket,
   knowledge: Collection,
+  ai: Cpu,
   system: Setting
 }
 

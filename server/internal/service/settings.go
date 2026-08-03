@@ -188,6 +188,22 @@ func (s *SettingsService) ResolvedLLM() (*model.ResolvedLLM, error) {
 	return nil, errors.New("模型路由未初始化")
 }
 
+func (s *SettingsService) LLMClientFor(virtualModelCode string) (*llm.Client, *model.ResolvedLLM, error) {
+	if s.router != nil {
+		return s.router.ClientFor(virtualModelCode)
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.llm != nil && s.llm.Enabled() {
+		return s.llm, &model.ResolvedLLM{
+			ModelCode: s.llmCfg.Model,
+			BaseURL:   s.llmCfg.BaseURL,
+			Enabled:   true,
+		}, nil
+	}
+	return nil, nil, errors.New("LLM 未配置")
+}
+
 func maskSecret(value string) string {
 	if value == "" {
 		return ""

@@ -511,6 +511,14 @@ func (s *AiModelService) UpdateVirtualModelMapping(id string, req model.VirtualM
 	return m, nil
 }
 
+func (s *AiModelService) ListVirtualModelOptions() ([]model.VirtualModel, error) {
+	res, err := s.ListVirtualModels("", 1, 200)
+	if err != nil {
+		return nil, err
+	}
+	return res.List, nil
+}
+
 func (s *AiModelService) DeleteVirtualModelMapping(id string) error {
 	if _, err := s.repo.FindVirtualModelMapping(id); err != nil {
 		return errors.New("映射不存在")

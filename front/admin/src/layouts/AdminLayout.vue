@@ -1,5 +1,6 @@
 <template>
-  <el-container class="admin-layout" :class="layoutClass">
+  <router-view v-if="route.meta.chatgptFullscreen" />
+  <el-container v-else class="admin-layout" :class="layoutClass">
     <!-- 经典风格：可折叠侧边栏 -->
     <AdminSidebar
       v-if="showClassicSidebar"
