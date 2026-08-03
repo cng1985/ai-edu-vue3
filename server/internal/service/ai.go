@@ -55,7 +55,7 @@ func (s *AIService) Chat(ctx context.Context, req model.ChatRequest, onToken fun
 
 	client, resolved, err := s.settings.LLMClientFor(req.VirtualModel)
 	if err != nil || client == nil || !client.Enabled() {
-		return nil, fmt.Errorf("大模型未配置，请设置 LLM_API_KEY 环境变量后重启服务")
+		return nil, fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
 	messages := buildLLMMessages(systemPrompt, req.History, userPrompt)

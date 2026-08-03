@@ -231,7 +231,7 @@ func NewEngine(
 				if llmCfg.Enabled {
 					fmt.Printf("   AI 大模型: 已启用 (%s)\n", llmCfg.Model)
 				} else {
-					fmt.Println("   AI 大模型: 未配置（请设置 LLM_API_KEY 环境变量）")
+					fmt.Println("   AI 大模型: 未就绪（请在管理端「大模型配置」中配置厂商 API Key）")
 				}
 				if err := r.Run(addr); err != nil && err != http.ErrServerClosed {
 					panic(err)

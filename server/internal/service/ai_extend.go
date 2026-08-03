@@ -52,7 +52,7 @@ func (s *AIService) CareerInterview(ctx context.Context, message string, history
 使用中文 Markdown 输出。`
 
 	if !s.settings.LLMClient().Enabled() {
-		return "", fmt.Errorf("大模型未配置，请设置 LLM_API_KEY 环境变量后重启服务")
+		return "", fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
 	messages := []llm.Message{{Role: "system", Content: systemPrompt}}
@@ -68,7 +68,7 @@ func (s *AIService) CareerInterview(ctx context.Context, message string, history
 // CareerRecommend 根据背景推荐职业方向
 func (s *AIService) CareerRecommend(ctx context.Context, req model.CareerRecommendRequest) (*model.CareerRecommendResult, error) {
 	if !s.settings.LLMClient().Enabled() {
-		return nil, fmt.Errorf("大模型未配置，请设置 LLM_API_KEY 环境变量后重启服务")
+		return nil, fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
 	prompt := fmt.Sprintf(`根据以下学习者信息，推荐 2-3 个 IT 职业方向。
@@ -110,7 +110,7 @@ func (s *AIService) GoalDecompose(ctx context.Context, req model.GoalDecomposeRe
 	}
 
 	if !s.settings.LLMClient().Enabled() {
-		return nil, fmt.Errorf("大模型未配置，请设置 LLM_API_KEY 环境变量后重启服务")
+		return nil, fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
 	prompt := fmt.Sprintf(`为学习者分解学习目标，输出 JSON（不要 markdown 代码块）：
@@ -139,7 +139,7 @@ func (s *AIService) GoalDecompose(ctx context.Context, req model.GoalDecomposeRe
 // LearningSuggest 生成个性化学习建议
 func (s *AIService) LearningSuggest(ctx context.Context, req model.LearningSuggestRequest) (*model.LearningSuggestResult, error) {
 	if !s.settings.LLMClient().Enabled() {
-		return nil, fmt.Errorf("大模型未配置，请设置 LLM_API_KEY 环境变量后重启服务")
+		return nil, fmt.Errorf("大模型未配置，请在管理端「大模型配置」中为厂商填写 API Key")
 	}
 
 	data, _ := json.Marshal(req)
