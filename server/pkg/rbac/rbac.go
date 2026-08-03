@@ -28,6 +28,8 @@ const (
 	PermDocumentExport = "document:export"
 	PermKnowledgeRead  = "knowledge:read"
 	PermKnowledgeManage = "knowledge:manage"
+	PermAiModelRead    = "ai_model:read"
+	PermAiModelManage  = "ai_model:manage"
 )
 
 var AllPermissions = []PermissionInfo{
@@ -57,6 +59,8 @@ var AllPermissions = []PermissionInfo{
 	{Code: PermDocumentExport, Name: "导出单据", Group: "单据管理"},
 	{Code: PermKnowledgeRead, Name: "查看知识库", Group: "知识库"},
 	{Code: PermKnowledgeManage, Name: "管理知识库", Group: "知识库"},
+	{Code: PermAiModelRead, Name: "查看 AI 模型配置", Group: "AI 服务"},
+	{Code: PermAiModelManage, Name: "管理 AI 模型配置", Group: "AI 服务"},
 }
 
 type PermissionInfo struct {
@@ -76,6 +80,7 @@ var DefaultRolePermissions = map[string][]string{
 		PermCustomerRead, PermCustomerReply,
 		PermDocumentRead, PermDocumentWrite, PermDocumentDelete, PermDocumentImport, PermDocumentExport,
 		PermKnowledgeRead, PermKnowledgeManage,
+		PermAiModelRead, PermAiModelManage,
 	},
 	"reviewer": {
 		PermCourseRead, PermQuizRead,

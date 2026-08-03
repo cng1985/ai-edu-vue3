@@ -26,6 +26,7 @@ type Handlers struct {
 	Customer  *CustomerHandler
 	Document  *DocumentHandler
 	Knowledge *KnowledgeHandler
+	AiModel   *AiModelHandler
 }
 
 type AuthHandler struct{ svc *service.AuthService }
@@ -40,11 +41,13 @@ func NewHandlers(
 	quizzes *QuizHandler, reviews *ReviewHandler, dashboard *DashboardHandler,
 	ai *AIHandler, rbac *RBACHandler, app *AppHandler, settings *SettingsHandler,
 	customer *CustomerHandler, document *DocumentHandler, knowledge *KnowledgeHandler,
+	aiModel *AiModelHandler,
 ) *Handlers {
 	return &Handlers{
 		Auth: auth, Users: users, Courses: courses, Quizzes: quizzes,
 		Reviews: reviews, Dashboard: dashboard, AI: ai, RBAC: rbac, App: app,
 		Settings: settings, Customer: customer, Document: document, Knowledge: knowledge,
+		AiModel: aiModel,
 	}
 }
 
@@ -62,6 +65,7 @@ var Module = fx.Provide(
 	NewQuizHandler, NewReviewHandler, NewDashboardHandler,
 	NewAIHandler, NewRBACHandler, NewAppHandler, NewSettingsHandler, NewCustomerHandler,
 	NewDocumentHandler, NewKnowledgeHandler,
+	NewAiModelHandler,
 	NewHandlers,
 )
 
@@ -80,7 +84,8 @@ func failErr(c *gin.Context, err error) {
 		code = http.StatusForbidden
 	case "该用户名已被注册":
 		code = http.StatusBadRequest
-	case "用户不存在", "课程不存在", "课程不存在或未发布", "章节不存在", "测验不存在", "审核记录不存在", "角色不存在", "工单不存在", "单据不存在", "导入任务不存在或已过期":
+	case "用户不存在", "课程不存在", "课程不存在或未发布", "章节不存在", "测验不存在", "审核记录不存在", "角色不存在", "工单不存在", "单据不存在", "导入任务不存在或已过期",
+		"统一模型不存在", "能力标签不存在", "关联不存在", "厂商不存在", "厂商模型不存在", "虚拟模型不存在", "映射不存在":
 		code = http.StatusNotFound
 	}
 	response.Fail(c, code, code, err.Error())

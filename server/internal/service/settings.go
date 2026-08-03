@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"errors"
+
 	"github.com/cng1985/ai-learning-server/internal/config"
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
@@ -20,6 +22,7 @@ const (
 type SettingsService struct {
 	repo   *repository.SettingsRepo
 	boot   *config.Config
+	router *ModelRouter
 	mu     sync.RWMutex
 	llm    *llm.Client
 	llmCfg config.LLMConfig
@@ -31,8 +34,8 @@ type settingsMeta struct {
 	source    string
 }
 
-func NewSettingsService(repo *repository.SettingsRepo, cfg *config.Config) *SettingsService {
-	s := &SettingsService{repo: repo, boot: cfg}
+func NewSettingsService(repo *repository.SettingsRepo, cfg *config.Config, router *ModelRouter) *SettingsService {
+	s := &SettingsService{repo: repo, boot: cfg, router: router}
 	s.reload()
 	return s
 }
@@ -61,6 +64,9 @@ func (s *SettingsService) reload() {
 	s.llmCfg = cfg
 	s.llm = client
 	s.meta = settingsMeta{updatedAt: updatedAt, source: source}
+	if s.router != nil {
+		s.router.InvalidateClients()
+	}
 }
 
 func mergeLLMSettings(boot config.LLMConfig, db map[string]string) (apiKey, baseURL, modelName, source string) {
@@ -87,12 +93,29 @@ func mergeLLMSettings(boot config.LLMConfig, db map[string]string) (apiKey, base
 }
 
 func (s *SettingsService) LLMClient() *llm.Client {
+	if s.router != nil {
+		client, _, err := s.router.ClientFor("")
+		if err == nil && client != nil && client.Enabled() {
+			return client
+		}
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.llm
 }
 
 func (s *SettingsService) LLMConfig() config.LLMConfig {
+	if s.router != nil {
+		resolved, err := s.router.Resolve("")
+		if err == nil && resolved != nil {
+			return config.LLMConfig{
+				APIKey:  resolved.APIKey,
+				BaseURL: resolved.BaseURL,
+				Model:   resolved.ModelCode,
+				Enabled: resolved.Enabled,
+			}
+		}
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.llmCfg
@@ -149,6 +172,20 @@ func (s *SettingsService) Update(req model.SettingsUpdateRequest) (*model.Settin
 	view := s.GetView()
 	view.UpdatedAt = now
 	return &view, nil
+}
+
+func (s *SettingsService) DefaultVirtualModel() string {
+	if s.router != nil {
+		return s.router.DefaultVirtualModelCode()
+	}
+	return ""
+}
+
+func (s *SettingsService) ResolvedLLM() (*model.ResolvedLLM, error) {
+	if s.router != nil {
+		return s.router.Resolve("")
+	}
+	return nil, errors.New("模型路由未初始化")
 }
 
 func maskSecret(value string) string {

@@ -85,11 +85,20 @@ func (s *AIService) ConfigInfo() map[string]interface{} {
 	cfg := s.settings.LLMConfig()
 	view := s.settings.GetView()
 	kbStatus, _ := s.knowledge.Status()
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"enabled": cfg.Enabled,
 		"model":   cfg.Model,
 		"baseUrl": cfg.BaseURL,
 		"source":  view.LLM.Source,
 		"knowledgeBase": kbStatus,
 	}
+	if s.settings.DefaultVirtualModel() != "" {
+		out["defaultVirtualModel"] = s.settings.DefaultVirtualModel()
+		resolved, err := s.settings.ResolvedLLM()
+		if err == nil && resolved != nil {
+			out["canonicalModel"] = resolved.CanonicalModelCode
+			out["provider"] = resolved.ProviderCode
+		}
+	}
+	return out
 }

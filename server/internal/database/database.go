@@ -35,6 +35,13 @@ func NewDB(cfg *config.Config) (*gorm.DB, error) {
 		&model.Document{},
 		&model.KnowledgeChunk{},
 		&model.KnowledgeIndexMeta{},
+		&model.CanonicalModel{},
+		&model.Capability{},
+		&model.CapabilityModel{},
+		&model.Provider{},
+		&model.ProviderModel{},
+		&model.VirtualModel{},
+		&model.VirtualModelMapping{},
 	)
 }
 
