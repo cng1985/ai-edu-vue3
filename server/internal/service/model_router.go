@@ -91,40 +91,52 @@ func (r *ModelRouter) resolveCanonical(canonicalModelID, virtualModelCode string
 		return nil, errors.New("无可用厂商模型")
 	}
 
-	// 按优先级分组，同优先级内按权重随机
-	pm := pickProviderModel(providerModels)
-	provider, err := r.repo.FindProvider(pm.ProviderID)
-	if err != nil || provider.Status != 1 {
-		return nil, errors.New("厂商不可用")
-	}
+	var firstConfigured *model.ResolvedLLM
+	for _, pm := range orderProviderModels(providerModels) {
+		provider, err := r.repo.FindProvider(pm.ProviderID)
+		if err != nil || provider.Status != 1 {
+			continue
+		}
 
-	apiKey := provider.APIKey
-	if apiKey == "" {
-		apiKey = r.boot.LLM.APIKey
+		apiKey := provider.APIKey
+		if apiKey == "" {
+			apiKey = r.boot.LLM.APIKey
+		}
+		baseURL := provider.BaseURL
+		if baseURL == "" {
+			baseURL = r.boot.LLM.BaseURL
+		}
+		modelCode := pm.ModelCode
+		if pm.DeploymentName != "" {
+			modelCode = pm.DeploymentName
+		}
+		if modelCode == "" {
+			modelCode = canon.Code
+		}
+		resolved := &model.ResolvedLLM{
+			VirtualModelCode:   virtualModelCode,
+			CanonicalModelCode: canon.Code,
+			ProviderCode:       provider.Code,
+			ModelCode:          modelCode,
+			DeploymentName:     pm.DeploymentName,
+			ContextWindow:      canon.ContextWindow,
+			ReasoningSupported: pm.ReasoningSupported,
+			BaseURL:            baseURL,
+			APIKey:             apiKey,
+			AuthType:           provider.AuthType,
+			Enabled:            apiKey != "",
+		}
+		if resolved.Enabled {
+			return resolved, nil
+		}
+		if firstConfigured == nil {
+			firstConfigured = resolved
+		}
 	}
-	baseURL := provider.BaseURL
-	if baseURL == "" {
-		baseURL = r.boot.LLM.BaseURL
+	if firstConfigured != nil {
+		return firstConfigured, nil
 	}
-
-	modelCode := pm.ModelCode
-	if pm.DeploymentName != "" {
-		modelCode = pm.DeploymentName
-	}
-	if modelCode == "" {
-		modelCode = canon.Code
-	}
-
-	return &model.ResolvedLLM{
-		VirtualModelCode:   virtualModelCode,
-		CanonicalModelCode:   canon.Code,
-		ProviderCode:       provider.Code,
-		ModelCode:          modelCode,
-		DeploymentName:     pm.DeploymentName,
-		BaseURL:            baseURL,
-		APIKey:             apiKey,
-		Enabled:            apiKey != "",
-	}, nil
+	return nil, errors.New("无可用厂商")
 }
 
 func (r *ModelRouter) fallbackResolved(virtualModelCode string) (*model.ResolvedLLM, error) {
@@ -149,12 +161,12 @@ func (r *ModelRouter) ClientFor(virtualModelCode string) (*llm.Client, *model.Re
 	if !resolved.Enabled {
 		return nil, resolved, errors.New("LLM 未配置")
 	}
-	key := resolved.ProviderCode + ":" + resolved.ModelCode
+	key := resolved.ProviderCode + ":" + resolved.ModelCode + ":" + resolved.AuthType
 	r.mu.RLock()
 	client, ok := r.clients[key]
 	r.mu.RUnlock()
 	if !ok {
-		client = llm.NewClient(resolved.APIKey, resolved.BaseURL, resolved.ModelCode)
+		client = llm.NewClientWithAuth(resolved.APIKey, resolved.BaseURL, resolved.ModelCode, resolved.AuthType)
 		r.mu.Lock()
 		r.clients[key] = client
 		r.mu.Unlock()
@@ -169,42 +181,51 @@ func (r *ModelRouter) InvalidateClients() {
 	r.mu.Unlock()
 }
 
-func pickProviderModel(list []model.ProviderModel) model.ProviderModel {
-	if len(list) == 1 {
-		return list[0]
-	}
-	// 取最低优先级组
-	minPriority := list[0].Priority
-	for _, pm := range list {
-		if pm.Priority < minPriority {
-			minPriority = pm.Priority
-		}
-	}
-	var candidates []model.ProviderModel
-	totalWeight := 0
-	for _, pm := range list {
-		if pm.Priority == minPriority {
-			candidates = append(candidates, pm)
-			w := pm.Weight
-			if w <= 0 {
-				w = 100
+// orderProviderModels 保留优先级顺序，并在同优先级内按权重生成无重复尝试顺序。
+// 这样首选厂商不可用时仍可尝试同组及后续优先级的备选厂商。
+func orderProviderModels(list []model.ProviderModel) []model.ProviderModel {
+	remaining := append([]model.ProviderModel(nil), list...)
+	ordered := make([]model.ProviderModel, 0, len(list))
+	for len(remaining) > 0 {
+		minPriority := remaining[0].Priority
+		for _, pm := range remaining[1:] {
+			if pm.Priority < minPriority {
+				minPriority = pm.Priority
 			}
-			totalWeight += w
 		}
-	}
-	if len(candidates) == 1 {
-		return candidates[0]
-	}
-	roll := rand.Intn(totalWeight)
-	for _, pm := range candidates {
-		w := pm.Weight
-		if w <= 0 {
-			w = 100
+		var group, rest []model.ProviderModel
+		for _, pm := range remaining {
+			if pm.Priority == minPriority {
+				group = append(group, pm)
+			} else {
+				rest = append(rest, pm)
+			}
 		}
-		roll -= w
-		if roll < 0 {
-			return pm
+		for len(group) > 0 {
+			totalWeight := 0
+			for _, pm := range group {
+				totalWeight += providerModelWeight(pm)
+			}
+			roll := rand.Intn(totalWeight)
+			selected := 0
+			for i, pm := range group {
+				roll -= providerModelWeight(pm)
+				if roll < 0 {
+					selected = i
+					break
+				}
+			}
+			ordered = append(ordered, group[selected])
+			group = append(group[:selected], group[selected+1:]...)
 		}
+		remaining = rest
 	}
-	return candidates[0]
+	return ordered
+}
+
+func providerModelWeight(pm model.ProviderModel) int {
+	if pm.Weight <= 0 {
+		return 100
+	}
+	return pm.Weight
 }

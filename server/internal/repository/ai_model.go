@@ -9,6 +9,13 @@ type AiModelRepo struct{ db *gorm.DB }
 
 func NewAiModelRepo(db *gorm.DB) *AiModelRepo { return &AiModelRepo{db: db} }
 
+// Transaction 在同一事务中执行一组模型配置变更。
+func (r *AiModelRepo) Transaction(fn func(*AiModelRepo) error) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return fn(NewAiModelRepo(tx))
+	})
+}
+
 // --- CanonicalModel ---
 
 func (r *AiModelRepo) ListCanonicalModels(keyword string, page, pageSize int) ([]model.CanonicalModel, int64, error) {
@@ -39,7 +46,9 @@ func (r *AiModelRepo) FindCanonicalModelByCode(code string) (*model.CanonicalMod
 	return &m, err
 }
 
-func (r *AiModelRepo) CreateCanonicalModel(m *model.CanonicalModel) error { return r.db.Create(m).Error }
+func (r *AiModelRepo) CreateCanonicalModel(m *model.CanonicalModel) error {
+	return r.db.Create(m).Error
+}
 func (r *AiModelRepo) UpdateCanonicalModel(m *model.CanonicalModel) error { return r.db.Save(m).Error }
 func (r *AiModelRepo) DeleteCanonicalModel(id string) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
@@ -121,7 +130,9 @@ func (r *AiModelRepo) FindCapabilityModel(id string) (*model.CapabilityModel, er
 	return &m, err
 }
 
-func (r *AiModelRepo) CreateCapabilityModel(m *model.CapabilityModel) error { return r.db.Create(m).Error }
+func (r *AiModelRepo) CreateCapabilityModel(m *model.CapabilityModel) error {
+	return r.db.Create(m).Error
+}
 func (r *AiModelRepo) DeleteCapabilityModel(id string) error {
 	return r.db.Delete(&model.CapabilityModel{}, "id = ?", id).Error
 }
@@ -306,6 +317,14 @@ func (r *AiModelRepo) UpdateVirtualModelMapping(m *model.VirtualModelMapping) er
 
 func (r *AiModelRepo) DeleteVirtualModelMapping(id string) error {
 	return r.db.Delete(&model.VirtualModelMapping{}, "id = ?", id).Error
+}
+
+func (r *AiModelRepo) ExistsVirtualModelMapping(virtualModelID, canonicalModelID string) bool {
+	var n int64
+	r.db.Model(&model.VirtualModelMapping{}).
+		Where("virtual_model_id = ? AND canonical_model_id = ?", virtualModelID, canonicalModelID).
+		Count(&n)
+	return n > 0
 }
 
 func (r *AiModelRepo) ListActiveMappingsByVirtual(virtualModelID string) ([]model.VirtualModelMapping, error) {

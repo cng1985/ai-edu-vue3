@@ -57,6 +57,9 @@
         <el-descriptions-item label="统一模型">{{ resolved.canonicalModelCode }}</el-descriptions-item>
         <el-descriptions-item label="厂商">{{ resolved.providerCode }}</el-descriptions-item>
         <el-descriptions-item label="调用模型">{{ resolved.modelCode }}</el-descriptions-item>
+        <el-descriptions-item label="部署名">{{ resolved.deploymentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="上下文窗口">{{ resolved.contextWindow || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="推理能力">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</el-descriptions-item>
         <el-descriptions-item label="Base URL">{{ resolved.baseUrl }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="resolved.enabled ? 'success' : 'info'" size="small">
@@ -255,10 +258,17 @@
           <el-input v-model="providerDialog.form.baseUrl" />
         </el-form-item>
         <el-form-item label="认证类型">
-          <el-input v-model="providerDialog.form.authType" placeholder="Bearer" />
+          <el-select v-model="providerDialog.form.authType" style="width: 100%">
+            <el-option label="Bearer Token" value="Bearer" />
+            <el-option label="api-key（Azure OpenAI）" value="api-key" />
+            <el-option label="x-api-key" value="x-api-key" />
+          </el-select>
         </el-form-item>
         <el-form-item label="API Key">
           <el-input v-model="providerDialog.form.apiKey" type="password" show-password placeholder="留空不修改" />
+        </el-form-item>
+        <el-form-item v-if="providerDialog.isEdit && providerDialog.form.apiKeyMasked" label="清除密钥">
+          <el-checkbox v-model="providerDialog.form.clearApiKey">删除已保存的 API Key</el-checkbox>
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="providerDialog.form.status" :active-value="1" :inactive-value="0" />
@@ -462,7 +472,7 @@ const capDialog = reactive({ visible: false, isEdit: false, saving: false, id: '
 const capModelDialog = reactive({ visible: false, saving: false, form: emptyCapModel() })
 
 function emptyProvider() {
-  return { code: '', name: '', baseUrl: '', authType: 'Bearer', apiKey: '', status: 1 }
+  return { code: '', name: '', baseUrl: '', authType: 'Bearer', apiKey: '', clearApiKey: false, status: 1 }
 }
 function emptyCanonical() {
   return { code: '', name: '', contextWindow: 128000, status: 1 }
@@ -580,7 +590,7 @@ async function handleResolve() {
 function openProviderDialog(row) {
   providerDialog.isEdit = !!row
   providerDialog.id = row?.id || ''
-  providerDialog.form = row ? { ...row, apiKey: '' } : emptyProvider()
+  providerDialog.form = row ? { ...row, apiKey: '', clearApiKey: false } : emptyProvider()
   providerDialog.visible = true
 }
 
@@ -605,8 +615,7 @@ async function deleteProvider(row) {
   await ElMessageBox.confirm(`确定删除厂商「${row.name}」？`, '确认')
   await aiModelsApi.deleteProvider(row.id)
   ElMessage.success('已删除')
-  await loadProviders()
-  await loadOverview()
+  await loadAll()
 }
 
 function openCanonicalDialog(row) {
@@ -637,8 +646,7 @@ async function deleteCanonical(row) {
   await ElMessageBox.confirm(`确定删除统一模型「${row.name}」？`, '确认')
   await aiModelsApi.deleteCanonicalModel(row.id)
   ElMessage.success('已删除')
-  await loadCanonical()
-  await loadOverview()
+  await loadAll()
 }
 
 function openProviderModelDialog(row) {
@@ -701,8 +709,7 @@ async function deleteVirtual(row) {
   await ElMessageBox.confirm(`确定删除虚拟模型「${row.name}」？`, '确认')
   await aiModelsApi.deleteVirtualModel(row.id)
   ElMessage.success('已删除')
-  await loadVirtual()
-  await loadOverview()
+  await loadAll()
 }
 
 async function setDefault(row) {

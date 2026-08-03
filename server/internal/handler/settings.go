@@ -69,13 +69,12 @@ func (h *SettingsHandler) SaveProvider(c *gin.Context) {
 }
 
 func (h *SettingsHandler) UpdateProvider(c *gin.Context) {
-	var p model.Provider
-	if err := c.ShouldBindJSON(&p); err != nil {
+	var req model.ProviderUpdateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, http.StatusBadRequest, 400, "参数错误")
 		return
 	}
-	p.ID = c.Param("id")
-	res, err := h.svc.SaveProvider(p)
+	res, err := h.svc.UpdateProvider(c.Param("id"), req)
 	if err != nil {
 		failErr(c, err)
 		return

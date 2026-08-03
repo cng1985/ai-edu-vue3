@@ -5,12 +5,14 @@
       <p>管理大模型分层配置（厂商 → 统一模型 → 虚拟模型）与知识库索引。</p>
     </div>
 
-    <!-- 未配置时：一键初始化向导 -->
-    <el-card v-if="!loading && overview.providerCount === 0" shadow="never" class="section-card">
+    <!-- 一键初始化/补全向导 -->
+    <el-card v-if="!loading" shadow="never" class="section-card">
       <template #header>
         <span>快速初始化大模型</span>
       </template>
-      <p class="wizard-hint">检测到尚未配置厂商，可通过向导一键创建完整路由链路。</p>
+      <p class="wizard-hint">
+        {{ overview.providerCount === 0 ? '尚未配置厂商，可通过向导创建完整路由链路。' : '可新增或补全厂商 → 统一模型 → 厂商模型 → 虚拟模型的完整链路。' }}
+      </p>
       <el-form label-width="120px" style="max-width: 640px">
         <el-form-item label="预设模板">
           <el-radio-group v-model="preset" @change="applyPreset">
@@ -36,6 +38,15 @@
         </el-form-item>
         <el-form-item label="模型名称">
           <el-input v-model="setupForm.canonicalName" placeholder="GPT-4o Mini" />
+        </el-form-item>
+        <el-form-item label="厂商模型标识" required>
+          <el-input v-model="setupForm.modelCode" placeholder="留空时使用模型编码" />
+        </el-form-item>
+        <el-form-item label="上下文窗口">
+          <el-input-number v-model="setupForm.contextWindow" :min="1" :step="1000" />
+        </el-form-item>
+        <el-form-item label="推理模型">
+          <el-switch v-model="setupForm.reasoningSupported" />
         </el-form-item>
         <el-form-item label="虚拟模型">
           <el-input v-model="setupForm.virtualCode" placeholder="chat-default" />
@@ -105,6 +116,9 @@
         <el-descriptions-item label="统一模型">{{ resolved.canonicalModelCode }}</el-descriptions-item>
         <el-descriptions-item label="厂商">{{ resolved.providerCode }}</el-descriptions-item>
         <el-descriptions-item label="调用模型">{{ resolved.modelCode }}</el-descriptions-item>
+        <el-descriptions-item label="部署名">{{ resolved.deploymentName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="上下文窗口">{{ resolved.contextWindow || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="推理能力">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</el-descriptions-item>
         <el-descriptions-item label="Base URL" :span="2">{{ resolved.baseUrl }}</el-descriptions-item>
         <el-descriptions-item label="状态">
           <el-tag :type="resolved.enabled ? 'success' : 'danger'" size="small">
@@ -193,10 +207,17 @@
           <el-input v-model="providerDialog.form.baseUrl" />
         </el-form-item>
         <el-form-item label="认证类型">
-          <el-input v-model="providerDialog.form.authType" placeholder="Bearer" />
+          <el-select v-model="providerDialog.form.authType" style="width: 100%">
+            <el-option label="Bearer Token" value="Bearer" />
+            <el-option label="api-key（Azure OpenAI）" value="api-key" />
+            <el-option label="x-api-key" value="x-api-key" />
+          </el-select>
         </el-form-item>
         <el-form-item label="API Key">
           <el-input v-model="providerDialog.form.apiKey" type="password" show-password :placeholder="providerDialog.isEdit ? '留空不修改' : '输入 API Key'" />
+        </el-form-item>
+        <el-form-item v-if="providerDialog.isEdit && providerDialog.form.apiKeyMasked" label="清除密钥">
+          <el-checkbox v-model="providerDialog.form.clearApiKey">删除已保存的 API Key</el-checkbox>
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="providerDialog.form.status" :active-value="1" :inactive-value="0" />
@@ -223,7 +244,10 @@ const PRESETS = {
     canonicalCode: 'gpt-4o-mini',
     canonicalName: 'GPT-4o Mini',
     virtualCode: 'chat-default',
-    virtualName: '默认对话模型'
+    virtualName: '默认对话模型',
+    modelCode: 'gpt-4o-mini',
+    contextWindow: 128000,
+    reasoningSupported: false
   },
   deepseek: {
     providerCode: 'deepseek',
@@ -232,7 +256,10 @@ const PRESETS = {
     canonicalCode: 'deepseek-chat',
     canonicalName: 'DeepSeek Chat',
     virtualCode: 'chat-default',
-    virtualName: '默认对话模型'
+    virtualName: '默认对话模型',
+    modelCode: 'deepseek-chat',
+    contextWindow: 64000,
+    reasoningSupported: false
   },
   custom: {
     providerCode: '',
@@ -241,7 +268,10 @@ const PRESETS = {
     canonicalCode: '',
     canonicalName: '',
     virtualCode: 'chat-default',
-    virtualName: '默认对话模型'
+    virtualName: '默认对话模型',
+    modelCode: '',
+    contextWindow: 128000,
+    reasoningSupported: false
   }
 }
 
@@ -273,7 +303,9 @@ const setupForm = reactive({
   canonicalName: 'GPT-4o Mini',
   modelCode: '',
   virtualCode: 'chat-default',
-  virtualName: '默认对话模型'
+  virtualName: '默认对话模型',
+  contextWindow: 128000,
+  reasoningSupported: false
 })
 
 const providersWithKey = computed(() => providers.value.filter((p) => p.apiKeyMasked).length)
@@ -302,7 +334,7 @@ const providerDialog = reactive({
 })
 
 function emptyProvider() {
-  return { code: '', name: '', baseUrl: '', authType: 'Bearer', apiKey: '', status: 1 }
+  return { code: '', name: '', baseUrl: '', authType: 'Bearer', apiKey: '', clearApiKey: false, status: 1 }
 }
 
 function applyPreset(val) {
@@ -334,7 +366,7 @@ async function handleQuickSetup() {
   try {
     const data = await settingsApi.quickSetup({
       ...setupForm,
-      modelCode: setupForm.canonicalCode
+      modelCode: setupForm.modelCode || setupForm.canonicalCode
     })
     applyView(data)
     ElMessage.success('大模型配置已初始化，路由链路已建立')
