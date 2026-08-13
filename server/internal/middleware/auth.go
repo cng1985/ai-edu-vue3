@@ -1,9 +1,12 @@
+// Package middleware 提供认证与鉴权中间件。
+//
+// 鉴权策略：JWT 仅证明"是谁"，角色与账号状态以数据库实时数据为准，
+// 因此修改角色或禁用账号后立即生效，无需等待旧 token 过期。
 package middleware
 
 import (
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/pkg/authutil"
@@ -14,88 +17,61 @@ import (
 
 const ClaimsKey = "claims"
 
-var (
-	permMu      sync.RWMutex
-	customPerms map[string][]string
-)
+// GuestIDPrefix 游客用户 ID 前缀，游客不落库，跳过数据库校验。
+const GuestIDPrefix = "guest_"
 
-func SetCustomPermissions(perms map[string][]string) {
-	permMu.Lock()
-	defer permMu.Unlock()
-	customPerms = perms
+// UserStore 提供按 ID 查询用户的能力（由 repository.UserRepo 实现）。
+type UserStore interface {
+	FindByID(id string) (*model.User, error)
 }
 
-func getCustomPerms() map[string][]string {
-	permMu.RLock()
-	defer permMu.RUnlock()
-	return customPerms
-}
-
-func Auth(jwt *authutil.JWTManager) gin.HandlerFunc {
+// Auth 校验 Bearer JWT，并从数据库加载用户最新的角色与状态写入 Claims。
+func Auth(jwt *authutil.JWTManager, users UserStore) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.GetHeader("Authorization")
 		if !strings.HasPrefix(header, "Bearer ") {
-			response.Fail(c, http.StatusUnauthorized, 401, "未登录")
-			c.Abort()
+			abort(c, http.StatusUnauthorized, "未登录")
 			return
 		}
 		claims, err := jwt.Verify(strings.TrimPrefix(header, "Bearer "))
 		if err != nil {
-			response.Fail(c, http.StatusUnauthorized, 401, "登录已过期")
-			c.Abort()
+			abort(c, http.StatusUnauthorized, "登录已过期")
 			return
+		}
+		if !strings.HasPrefix(claims.ID, GuestIDPrefix) {
+			user, err := users.FindByID(claims.ID)
+			if err != nil {
+				abort(c, http.StatusUnauthorized, "账号不存在或已被删除")
+				return
+			}
+			if user.Status == model.UserStatusDisabled {
+				abort(c, http.StatusForbidden, "账号已被禁用")
+				return
+			}
+			claims.Username = user.Username
+			claims.Role = user.Role
 		}
 		c.Set(ClaimsKey, claims)
 		c.Next()
 	}
 }
 
-func OptionalAuth(jwt *authutil.JWTManager) gin.HandlerFunc {
+// RequireAdminPortal 要求当前角色可访问管理后台（admin/reviewer/operator）。
+func RequireAdminPortal() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		header := c.GetHeader("Authorization")
-		if strings.HasPrefix(header, "Bearer ") {
-			if claims, err := jwt.Verify(strings.TrimPrefix(header, "Bearer ")); err == nil {
-				c.Set(ClaimsKey, claims)
-			}
-		}
-		c.Next()
-	}
-}
-
-func RequireAdmin() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		claims := c.MustGet(ClaimsKey).(*model.Claims)
-		if !rbac.IsAdminRole(claims.Role) {
-			response.Fail(c, http.StatusForbidden, 403, "无权限")
-			c.Abort()
+		if !rbac.IsAdminRole(GetClaims(c).Role) {
+			abort(c, http.StatusForbidden, "无权限")
 			return
 		}
 		c.Next()
 	}
 }
 
-func RequireRole(roles ...string) gin.HandlerFunc {
-	allowed := make(map[string]bool, len(roles))
-	for _, r := range roles {
-		allowed[r] = true
-	}
+// RequirePermission 要求当前角色拥有指定权限码，权限数据来自 Resolver。
+func RequirePermission(resolver *rbac.Resolver, perm string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		claims := c.MustGet(ClaimsKey).(*model.Claims)
-		if !allowed[claims.Role] {
-			response.Fail(c, http.StatusForbidden, 403, "无权限")
-			c.Abort()
-			return
-		}
-		c.Next()
-	}
-}
-
-func RequirePermission(perm string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		claims := c.MustGet(ClaimsKey).(*model.Claims)
-		if !rbac.HasPermission(claims.Role, perm, getCustomPerms()) {
-			response.Fail(c, http.StatusForbidden, 403, "无权限: "+perm)
-			c.Abort()
+		if !resolver.Has(GetClaims(c).Role, perm) {
+			abort(c, http.StatusForbidden, "无权限: "+perm)
 			return
 		}
 		c.Next()
@@ -106,7 +82,7 @@ func GetClaims(c *gin.Context) *model.Claims {
 	return c.MustGet(ClaimsKey).(*model.Claims)
 }
 
-func HasClaims(c *gin.Context) bool {
-	_, ok := c.Get(ClaimsKey)
-	return ok
+func abort(c *gin.Context, code int, message string) {
+	response.Fail(c, code, code, message)
+	c.Abort()
 }

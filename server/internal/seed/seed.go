@@ -163,10 +163,7 @@ func Run(users *repository.UserRepo, courses *repository.CourseRepo, quizzes *re
 		}
 	}
 
-	fmt.Println("✅ 数据种子已写入 SQLite 数据库")
-	fmt.Println("   管理员账号: admin / admin123")
-	fmt.Println("   审核员账号: reviewer / review123")
-	fmt.Println("   运营账号: operator / oper123")
+	fmt.Println("✅ 数据种子已写入 SQLite 数据库（演示账号见 README.md「演示账号」章节）")
 	return nil
 }
 

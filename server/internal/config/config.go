@@ -3,17 +3,23 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"go.uber.org/fx"
 )
 
+// DefaultJWTSecret 仅用于本地开发，生产环境必须通过 JWT_SECRET 覆盖。
+const DefaultJWTSecret = "ai-learning-admin-secret-dev"
+
 type Config struct {
-	Port      string
-	JWTSecret string
-	DBPath    string
-	LLM       LLMConfig
-	Embedding EmbeddingConfig
-	Vector    VectorConfig
+	Port         string
+	JWTSecret    string
+	TokenTTL     time.Duration // 登录 token 有效期
+	DBPath       string
+	CORSOrigins  string // 允许跨域的来源，逗号分隔；* 表示不限制
+	LLM          LLMConfig
+	Embedding    EmbeddingConfig
+	Vector       VectorConfig
 }
 
 type EmbeddingConfig struct {
@@ -43,11 +49,22 @@ func NewConfig() *Config {
 	}
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "ai-learning-admin-secret-dev"
+		secret = DefaultJWTSecret
+		fmt.Println("⚠️  JWT_SECRET 未配置，正在使用内置开发密钥；生产环境请务必设置 JWT_SECRET")
+	}
+	tokenTTL := 7 * 24 * time.Hour
+	if v := os.Getenv("JWT_TTL_HOURS"); v != "" {
+		if n, err := parseInt(v); err == nil && n > 0 {
+			tokenTTL = time.Duration(n) * time.Hour
+		}
 	}
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
 		dbPath = "data/ai-learning.db"
+	}
+	corsOrigins := os.Getenv("CORS_ORIGINS")
+	if corsOrigins == "" {
+		corsOrigins = "*"
 	}
 	apiKey := os.Getenv("LLM_API_KEY")
 	baseURL := os.Getenv("LLM_BASE_URL")
@@ -89,9 +106,11 @@ func NewConfig() *Config {
 		}
 	}
 	return &Config{
-		Port:      port,
-		JWTSecret: secret,
-		DBPath:    dbPath,
+		Port:        port,
+		JWTSecret:   secret,
+		TokenTTL:    tokenTTL,
+		DBPath:      dbPath,
+		CORSOrigins: corsOrigins,
 		LLM: LLMConfig{
 			APIKey:  apiKey,
 			BaseURL: baseURL,

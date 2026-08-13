@@ -66,7 +66,18 @@ npm run dev
 | :--- | :--- | :--- | :--- |
 | 管理员 | admin | admin123 | 管理端 |
 | 审核员 | reviewer | review123 | 管理端 |
+| 运营 | operator | oper123 | 管理端 |
 | 学员 | demo | demo123 | 应用端 |
+
+### 服务端环境变量
+
+| 变量 | 默认值 | 说明 |
+| :--- | :--- | :--- |
+| `PORT` | `3001` | API 服务端口 |
+| `JWT_SECRET` | 内置开发密钥 | JWT 签名密钥，**生产环境必须配置** |
+| `JWT_TTL_HOURS` | `168`（7 天） | 登录 token 有效期（小时） |
+| `DB_PATH` | `data/ai-learning.db` | SQLite 数据库路径 |
+| `CORS_ORIGINS` | `*` | 允许跨域的来源（逗号分隔），生产环境建议配置白名单 |
 
 ### API 接口概览
 

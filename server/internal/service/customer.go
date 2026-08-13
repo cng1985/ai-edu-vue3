@@ -7,6 +7,7 @@ import (
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
 	"github.com/cng1985/ai-learning-server/internal/ws"
+	"github.com/cng1985/ai-learning-server/pkg/apperr"
 	"github.com/cng1985/ai-learning-server/pkg/rbac"
 )
 
@@ -82,10 +83,10 @@ func (s *CustomerService) ListTickets(keyword, status string, page, pageSize int
 func (s *CustomerService) GetTicket(ticketID, userID, role string) (*model.CustomerTicket, error) {
 	ticket, err := s.customers.FindTicketByID(ticketID)
 	if err != nil {
-		return nil, errors.New("工单不存在")
+		return nil, apperr.NotFound("工单不存在")
 	}
 	if !rbac.IsAdminRole(role) && ticket.UserID != userID {
-		return nil, errors.New("无权限")
+		return nil, apperr.Forbidden("无权限")
 	}
 	s.enrichTicket(ticket)
 	return ticket, nil
@@ -111,10 +112,10 @@ func (s *CustomerService) SendMessage(ticketID, senderID, senderRole, content st
 	}
 	ticket, err := s.customers.FindTicketByID(ticketID)
 	if err != nil {
-		return nil, errors.New("工单不存在")
+		return nil, apperr.NotFound("工单不存在")
 	}
 	if !rbac.IsAdminRole(senderRole) && ticket.UserID != senderID {
-		return nil, errors.New("无权限")
+		return nil, apperr.Forbidden("无权限")
 	}
 	if ticket.Status == "closed" {
 		return nil, errors.New("工单已关闭，无法发送消息")
@@ -151,14 +152,14 @@ func (s *CustomerService) sendMessage(ticket *model.CustomerTicket, senderID, se
 
 func (s *CustomerService) UpdateStatus(ticketID, status, operatorID, role string) (*model.CustomerTicket, error) {
 	if !rbac.IsAdminRole(role) {
-		return nil, errors.New("无权限")
+		return nil, apperr.Forbidden("无权限")
 	}
 	if status != "open" && status != "pending" && status != "closed" {
 		return nil, errors.New("无效的状态")
 	}
 	ticket, err := s.customers.FindTicketByID(ticketID)
 	if err != nil {
-		return nil, errors.New("工单不存在")
+		return nil, apperr.NotFound("工单不存在")
 	}
 	ticket.Status = status
 	ticket.UpdatedAt = time.Now().UnixMilli()
