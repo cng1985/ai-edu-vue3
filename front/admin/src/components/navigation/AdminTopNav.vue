@@ -10,7 +10,8 @@
           :class="{ 'admin-topnav__tab--active': activeGroup === group.key }"
           @click="onGroupClick(group)"
         >
-          {{ group.title }}
+          <el-icon :size="15"><component :is="getGroupIcon(group.key)" /></el-icon>
+          <span>{{ group.title }}</span>
         </button>
       </div>
     </el-scrollbar>
@@ -18,7 +19,9 @@
 </template>
 
 <script setup>
-const props = defineProps({
+import { getGroupIcon } from '../../utils/navGroupIcons'
+
+defineProps({
   visibleGroups: { type: Array, required: true },
   activeGroup: { type: String, required: true }
 })
@@ -33,39 +36,42 @@ function onGroupClick(group) {
 
 <style scoped>
 .admin-topnav {
-  border-bottom: 1px solid #e5e7eb;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
 }
 
 .admin-topnav__tabs {
   display: flex;
   gap: 4px;
-  padding: 0 16px;
-  min-height: 40px;
+  padding: 8px 24px;
   align-items: center;
 }
 
 .admin-topnav__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: none;
   background: transparent;
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 7px 13px;
+  border-radius: 999px;
   font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 600;
+  color: var(--text-3);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all var(--t-fast);
 }
 
 .admin-topnav__tab:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-3);
+  color: var(--text);
 }
 
 .admin-topnav__tab--active {
-  background: #eef2ff;
-  color: #4f46e5;
-  font-weight: 600;
+  background: var(--ink);
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(18, 20, 48, 0.2);
 }
 </style>
