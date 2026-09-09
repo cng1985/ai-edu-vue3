@@ -35,7 +35,7 @@
 
         <div class="cgpt-sidebar__footer">
           <button type="button" class="cgpt-sidebar-user" @click="router.push('/dashboard')">
-            <span class="cgpt-sidebar-user__avatar" :style="{ background: auth.user?.avatarColor || '#10a37f' }">
+            <span class="cgpt-sidebar-user__avatar" :style="{ background: auth.user?.avatarColor || 'var(--primary)' }">
               {{ auth.user?.avatar || '管' }}
             </span>
             <span class="cgpt-sidebar-user__name">{{ auth.user?.nickname || '管理员' }}</span>
@@ -124,13 +124,10 @@
             <div class="cgpt-msg__inner">
               <div class="cgpt-msg__avatar">
                 <template v-if="msg.role === 'assistant'">
-                  <svg class="cgpt-logo" viewBox="0 0 41 41" fill="none">
-                    <path fill="#10a37f" d="M37.5 18.5c0-1.2-.3-2.4-.9-3.5L33 9.2c-.6-1.1-1.5-2-2.6-2.6L26.5 3.4C25.4 2.8 24.2 2.5 23 2.5h-4c-1.2 0-2.4.3-3.5.9L9.2 6.9C8.1 7.5 7.2 8.4 6.6 9.5L3.4 15.5c-.6 1.1-.9 2.3-.9 3.5v4c0 1.2.3 2.4.9 3.5l3.2 6c.6 1.1 1.5 2 2.6 2.6l6 3.2c1.1.6 2.3.9 3.5.9h4c1.2 0 2.4-.3 3.5-.9l6-3.2c1.1-.6 2-1.5 2.6-2.6l3.2-6c.6-1.1.9-2.3.9-3.5v-4z" />
-                    <path fill="#fff" d="M20.5 11v9.5l6 3.5" stroke="#fff" stroke-width="1.5" />
-                  </svg>
+                  <span class="cgpt-logo">AI</span>
                 </template>
                 <template v-else>
-                  <span class="cgpt-msg__user-icon" :style="{ background: auth.user?.avatarColor || '#5436DA' }">
+                  <span class="cgpt-msg__user-icon" :style="{ background: auth.user?.avatarColor || 'var(--primary)' }">
                     {{ auth.user?.avatar || '我' }}
                   </span>
                 </template>
@@ -209,7 +206,7 @@
               </button>
             </div>
           </div>
-          <p class="cgpt-disclaimer">ChatGPT 可能会犯错。请核查重要信息。</p>
+          <p class="cgpt-disclaimer">AI 可能会犯错，请核查重要信息。</p>
         </div>
       </footer>
     </main>
@@ -479,24 +476,32 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* ChatGPT 风格 — 深色侧栏 + 白色主区 */
+/* 对话工作台 — 深色侧栏 + 浅色主区，沿用全局设计系统 */
 .cgpt {
   display: flex;
   height: 100vh;
   width: 100%;
-  background: #fff;
-  color: #0d0d0d;
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
   overflow: hidden;
 }
 
 /* 侧栏 */
 .cgpt-sidebar {
-  width: 260px;
+  width: 272px;
   flex-shrink: 0;
-  background: #171717;
-  color: #ececec;
-  transition: width 0.2s ease, margin 0.2s ease;
+  background: linear-gradient(180deg, var(--ink-2) 0%, var(--ink) 100%);
+  color: var(--ink-text);
+  transition: width 0.22s var(--ease);
+  position: relative;
+}
+
+.cgpt-sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(320px 240px at 0% 0%, rgba(107, 92, 255, 0.35), transparent 70%);
 }
 
 .cgpt-sidebar--hidden {
@@ -505,11 +510,12 @@ onUnmounted(() => {
 }
 
 .cgpt-sidebar__inner {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 8px;
-  width: 260px;
+  padding: 12px;
+  width: 272px;
 }
 
 .cgpt-btn-new {
@@ -517,26 +523,29 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
-  background: transparent;
-  color: #ececec;
+  padding: 11px 14px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(107, 92, 255, 0.95) 0%, rgba(134, 118, 255, 0.85) 100%);
+  color: #fff;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  box-shadow: 0 10px 24px rgba(107, 92, 255, 0.35);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
 }
 
 .cgpt-btn-new:hover {
-  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(107, 92, 255, 0.45);
 }
 
 .cgpt-sidebar__list {
   flex: 1;
   overflow-y: auto;
   margin: 0 -4px;
-  padding: 4px 0;
+  padding: 4px;
 }
 
 .cgpt-history-item {
@@ -544,20 +553,27 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 12px;
+  margin-bottom: 2px;
   border: none;
-  border-radius: 10px;
+  border-radius: 11px;
   background: transparent;
-  color: #ececec;
-  font-size: 14px;
+  color: var(--ink-text);
+  font-size: 13.5px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--t-fast), color var(--t-fast);
 }
 
-.cgpt-history-item:hover,
+.cgpt-history-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
 .cgpt-history-item--active {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
 }
 
 .cgpt-history-item__text {
@@ -574,8 +590,8 @@ onUnmounted(() => {
   justify-content: center;
   width: 24px;
   height: 24px;
-  border-radius: 6px;
-  color: #9ca3af;
+  border-radius: 7px;
+  color: var(--ink-text-2);
   cursor: pointer;
 }
 
@@ -589,8 +605,8 @@ onUnmounted(() => {
 }
 
 .cgpt-sidebar__footer {
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .cgpt-sidebar-user {
@@ -600,25 +616,28 @@ onUnmounted(() => {
   width: 100%;
   padding: 8px 10px;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
-  color: #ececec;
+  color: var(--ink-text);
   cursor: pointer;
   font-size: 14px;
+  transition: background var(--t-fast);
 }
 
 .cgpt-sidebar-user:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
 }
 
 .cgpt-sidebar-user__avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
+  font-weight: 700;
   color: #fff;
   flex-shrink: 0;
 }
@@ -627,6 +646,7 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 /* 主区 */
@@ -635,33 +655,41 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: #fff;
+  background:
+    radial-gradient(800px 400px at 85% -10%, rgba(107, 92, 255, 0.08), transparent 60%),
+    var(--bg);
 }
 
 .cgpt-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  height: 52px;
-  padding: 0 12px;
+  gap: 10px;
+  height: 60px;
+  padding: 0 16px;
   flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
 }
 
 .cgpt-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   background: transparent;
-  color: #0d0d0d;
+  color: var(--text-2);
   cursor: pointer;
+  transition: all var(--t-fast);
 }
 
 .cgpt-icon-btn:hover {
-  background: #f4f4f4;
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
 }
 
 .cgpt-header__spacer {
@@ -675,31 +703,34 @@ onUnmounted(() => {
 .cgpt-model-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: none;
-  border-radius: 10px;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
   background: transparent;
-  font-size: 18px;
-  font-weight: 600;
-  color: #0d0d0d;
+  font-family: 'Sora', 'Noto Sans SC', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
   cursor: pointer;
+  transition: all var(--t-fast);
 }
 
 .cgpt-model-btn:hover {
-  background: #f4f4f4;
+  background: var(--surface-2);
+  border-color: var(--border);
 }
 
 .cgpt-model-menu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  min-width: 200px;
+  min-width: 240px;
   padding: 6px;
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
   z-index: 100;
 }
 
@@ -708,28 +739,31 @@ onUnmounted(() => {
   width: 100%;
   padding: 10px 12px;
   border: none;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   font-size: 14px;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
-  color: #0d0d0d;
+  color: var(--text-2);
+  transition: all var(--t-fast);
 }
 
 .cgpt-model-option:hover {
-  background: #f4f4f4;
+  background: var(--surface-2);
+  color: var(--text);
 }
 
 .cgpt-model-option--active {
-  background: #f0fdf4;
-  color: #10a37f;
-  font-weight: 500;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
+  font-weight: 700;
 }
 
 .cgpt-model-menu__divider {
   height: 1px;
-  margin: 4px 8px;
-  background: #e5e5e5;
+  margin: 6px 8px;
+  background: var(--border);
 }
 
 /* 消息区 */
@@ -749,17 +783,18 @@ onUnmounted(() => {
 }
 
 .cgpt-welcome__title {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: 30px;
+  font-weight: 700;
   margin: 0 0 32px;
-  color: #0d0d0d;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .cgpt-welcome__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  max-width: 720px;
+  max-width: 760px;
   width: 100%;
 }
 
@@ -767,73 +802,90 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
-  border: 1px solid #e5e5e5;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
   border-radius: 16px;
-  background: #fff;
+  background: var(--surface);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--t-fast);
 }
 
 .cgpt-welcome-card:hover {
-  background: #f9f9f9;
-  border-color: #d4d4d4;
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .cgpt-welcome-card__title {
   font-size: 14px;
-  font-weight: 600;
-  color: #0d0d0d;
+  font-weight: 700;
+  color: var(--text);
 }
 
 .cgpt-welcome-card__desc {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-3);
 }
 
 .cgpt-msg {
   border-bottom: 1px solid transparent;
 }
 
-.cgpt-msg--user {
-  background: #f7f7f8;
-}
-
 .cgpt-msg__inner {
   display: flex;
   gap: 16px;
-  max-width: 768px;
+  max-width: 820px;
   margin: 0 auto;
-  padding: 24px 24px;
+  padding: 22px 24px;
 }
 
 .cgpt-msg__avatar {
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
 }
 
 .cgpt-logo {
-  width: 32px;
-  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--primary) 0%, #a396ff 100%);
+  color: #fff;
+  font-family: 'Sora', sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  box-shadow: 0 6px 14px var(--primary-glow);
 }
 
 .cgpt-msg__user-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
+  font-weight: 700;
   color: #fff;
 }
 
 .cgpt-msg__content {
   flex: 1;
   min-width: 0;
-  padding-top: 2px;
+  padding-top: 4px;
+}
+
+.cgpt-msg--user .cgpt-msg__content {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
 }
 
 .cgpt-msg__actions {
@@ -849,15 +901,16 @@ onUnmounted(() => {
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
-  color: #6b7280;
+  color: var(--text-3);
   cursor: pointer;
+  transition: all var(--t-fast);
 }
 
 .cgpt-msg-action:hover {
-  background: #f4f4f4;
-  color: #0d0d0d;
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .cgpt-dots span {
@@ -865,7 +918,7 @@ onUnmounted(() => {
   width: 8px;
   height: 8px;
   margin-right: 4px;
-  background: #9ca3af;
+  background: var(--primary);
   border-radius: 50%;
   animation: cgpt-dot 1.2s infinite;
 }
@@ -882,11 +935,10 @@ onUnmounted(() => {
 .cgpt-footer {
   flex-shrink: 0;
   padding: 12px 16px 20px;
-  background: #fff;
 }
 
 .cgpt-input-box {
-  max-width: 768px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
@@ -894,17 +946,17 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #d4d4d4;
-  border-radius: 28px;
-  background: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  padding: 10px 10px 10px 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
 .cgpt-input-shell--focus {
-  border-color: #b4b4b4;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow);
 }
 
 .cgpt-input {
@@ -912,17 +964,17 @@ onUnmounted(() => {
   border: none;
   outline: none;
   resize: none;
-  font-size: 16px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   max-height: 200px;
-  padding: 4px 0;
+  padding: 6px 0;
   font-family: inherit;
   background: transparent;
-  color: #0d0d0d;
+  color: var(--text);
 }
 
 .cgpt-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-3);
 }
 
 .cgpt-input-actions {
@@ -933,28 +985,29 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   border: none;
   border-radius: 50%;
-  background: #e5e5e5;
-  color: #a3a3a3;
+  background: var(--surface-3);
+  color: var(--text-3);
   cursor: not-allowed;
-  transition: background 0.15s, color 0.15s;
+  transition: all var(--t-fast);
 }
 
 .cgpt-send--active {
-  background: #0d0d0d;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: #fff;
   cursor: pointer;
+  box-shadow: 0 6px 14px var(--primary-glow);
 }
 
 .cgpt-send--active:hover {
-  background: #333;
+  transform: translateY(-1px);
 }
 
 .cgpt-send--stop {
-  background: #0d0d0d;
+  background: var(--ink);
   color: #fff;
   cursor: pointer;
 }
@@ -963,7 +1016,7 @@ onUnmounted(() => {
   margin: 10px 0 0;
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-3);
 }
 
 @media (max-width: 768px) {

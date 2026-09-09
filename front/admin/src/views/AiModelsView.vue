@@ -1,76 +1,55 @@
 <template>
-  <div>
-    <div class="page-header">
-      <h2>AI 大模型配置</h2>
-      <p>分层管理 Provider（厂商）、CanonicalModel（统一模型）、Capability（能力标签）与 VirtualModel（虚拟模型路由）。</p>
+  <div class="page">
+    <PageHeader eyebrow="AI 服务" title="AI 大模型配置" subtitle="分层管理 Provider（厂商）、CanonicalModel（统一模型）、Capability（能力标签）与 VirtualModel（虚拟模型路由）。" />
+
+    <div class="stat-grid stat-grid--6">
+      <StatCard label="厂商" :value="overview.providerCount" icon="OfficeBuilding" tone="primary" />
+      <StatCard label="统一模型" :value="overview.canonicalModelCount" icon="Cpu" tone="sky" />
+      <StatCard label="能力标签" :value="overview.capabilityCount" icon="PriceTag" tone="rose" />
+      <StatCard label="虚拟模型" :value="overview.virtualModelCount" icon="Connection" tone="success" />
+      <StatCard label="厂商实现" :value="overview.providerModelCount" icon="SetUp" tone="warning" />
+      <StatCard label="默认虚拟模型" :value="overview.defaultVirtualModel || '—'" icon="Star" tone="ink" />
     </div>
 
-    <el-row :gutter="16" class="stats-row">
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">厂商</div>
-          <div class="stat-value">{{ overview.providerCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">统一模型</div>
-          <div class="stat-value">{{ overview.canonicalModelCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">能力标签</div>
-          <div class="stat-value">{{ overview.capabilityCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">虚拟模型</div>
-          <div class="stat-value">{{ overview.virtualModelCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">厂商实现</div>
-          <div class="stat-value">{{ overview.providerModelCount }}</div>
-        </el-card>
-      </el-col>
-      <el-col :span="4">
-        <el-card shadow="never">
-          <div class="stat-label">默认虚拟模型</div>
-          <div class="stat-value small">{{ overview.defaultVirtualModel || '-' }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card shadow="never" class="resolve-card">
-      <template #header>
-        <span>路由解析测试</span>
-      </template>
-      <div class="resolve-bar">
-        <el-input v-model="resolveCode" placeholder="虚拟模型编码，如 chat-default" clearable />
-        <el-button type="primary" :loading="resolving" @click="handleResolve">解析</el-button>
+    <div class="panel">
+      <div class="panel__head">
+        <h3 class="panel__title">
+          <span class="panel__title-icon"><el-icon><Position /></el-icon></span>
+          路由解析测试
+        </h3>
+        <span class="muted">输入虚拟模型编码，查看最终会调用哪个厂商模型</span>
       </div>
-      <el-descriptions v-if="resolved" :column="2" border style="margin-top: 12px">
-        <el-descriptions-item label="虚拟模型">{{ resolved.virtualModelCode }}</el-descriptions-item>
-        <el-descriptions-item label="统一模型">{{ resolved.canonicalModelCode }}</el-descriptions-item>
-        <el-descriptions-item label="厂商">{{ resolved.providerCode }}</el-descriptions-item>
-        <el-descriptions-item label="调用模型">{{ resolved.modelCode }}</el-descriptions-item>
-        <el-descriptions-item label="部署名">{{ resolved.deploymentName || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="上下文窗口">{{ resolved.contextWindow || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="推理能力">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</el-descriptions-item>
-        <el-descriptions-item label="Base URL">{{ resolved.baseUrl }}</el-descriptions-item>
-        <el-descriptions-item label="状态">
-          <el-tag :type="resolved.enabled ? 'success' : 'info'" size="small">
-            {{ resolved.enabled ? '可用' : '未配置密钥' }}
-          </el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
-    </el-card>
+      <div class="panel__body">
+        <div class="resolve-bar">
+          <el-input v-model="resolveCode" placeholder="虚拟模型编码，如 chat-default" clearable class="mono" :prefix-icon="Search" @keyup.enter="handleResolve" />
+          <el-button type="primary" :loading="resolving" @click="handleResolve">解析</el-button>
+        </div>
+        <div v-if="resolved" class="route">
+          <div class="route__chain">
+            <span class="route__node route__node--virtual"><small>虚拟模型</small><b class="mono">{{ resolved.virtualModelCode }}</b></span>
+            <el-icon class="route__arrow"><Right /></el-icon>
+            <span class="route__node"><small>统一模型</small><b class="mono">{{ resolved.canonicalModelCode }}</b></span>
+            <el-icon class="route__arrow"><Right /></el-icon>
+            <span class="route__node"><small>厂商</small><b class="mono">{{ resolved.providerCode }}</b></span>
+            <el-icon class="route__arrow"><Right /></el-icon>
+            <span class="route__node route__node--model"><small>调用模型</small><b class="mono">{{ resolved.modelCode }}</b></span>
+            <el-tag :type="resolved.enabled ? 'success' : 'info'" size="small" class="route__state">
+              {{ resolved.enabled ? '可用' : '未配置密钥' }}
+            </el-tag>
+          </div>
+          <div class="kv" style="margin-top: 12px">
+            <div class="kv__item"><span class="kv__label">部署名</span><span class="kv__value mono">{{ resolved.deploymentName || '—' }}</span></div>
+            <div class="kv__item"><span class="kv__label">上下文窗口</span><span class="kv__value num">{{ resolved.contextWindow || '—' }}</span></div>
+            <div class="kv__item"><span class="kv__label">推理能力</span><span class="kv__value">{{ resolved.reasoningSupported ? '支持' : '普通模型' }}</span></div>
+            <div class="kv__item"><span class="kv__label">Base URL</span><span class="kv__value mono">{{ resolved.baseUrl }}</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <el-card shadow="never">
-      <el-tabs v-model="activeTab">
+    <div class="panel">
+      <div class="panel__body tabs-body">
+      <el-tabs v-model="activeTab" class="model-tabs">
         <el-tab-pane label="厂商" name="providers">
           <div class="tab-toolbar">
             <el-button v-if="canManage" type="primary" @click="openProviderDialog()">新增厂商</el-button>
@@ -243,7 +222,8 @@
           </el-table>
         </el-tab-pane>
       </el-tabs>
-    </el-card>
+      </div>
+    </div>
 
     <!-- 厂商对话框 -->
     <el-dialog v-model="providerDialog.visible" :title="providerDialog.isEdit ? '编辑厂商' : '新增厂商'" width="520px">
@@ -426,9 +406,12 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Position, Search, Right } from '@element-plus/icons-vue'
 import { aiModelsApi } from '../api/aiModels.js'
 import { useAuthStore } from '../stores/auth.js'
 import { PERM } from '../constants/permissions.js'
+import PageHeader from '../components/common/PageHeader.vue'
+import StatCard from '../components/common/StatCard.vue'
 
 const auth = useAuthStore()
 const canManage = computed(() => auth.hasPermission(PERM.AI_MODEL_MANAGE))
@@ -811,35 +794,96 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-header p {
-  margin: 6px 0 0;
-  color: #6b7280;
-  font-size: 14px;
+.stat-grid--6 {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
-.stats-row {
-  margin-bottom: 16px;
-}
-.stat-label {
-  color: #6b7280;
-  font-size: 13px;
-}
-.stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-.stat-value.small {
-  font-size: 14px;
-  font-weight: 500;
-}
-.resolve-card {
-  margin-bottom: 16px;
-}
+
 .resolve-bar {
   display: flex;
-  gap: 12px;
+  gap: 10px;
+  max-width: 640px;
 }
+
+.route {
+  margin-top: 16px;
+}
+
+.route__chain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.route__node {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  line-height: 1.3;
+}
+
+.route__node small {
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+.route__node b {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.route__node--virtual {
+  border-color: var(--primary-soft-2);
+  background: var(--primary-soft);
+}
+
+.route__node--model {
+  border-color: #d1f3e6;
+  background: var(--success-soft);
+}
+
+.route__arrow {
+  color: var(--text-3);
+}
+
+.route__state {
+  margin-left: auto;
+}
+
+.tabs-body {
+  padding-top: 8px;
+}
+
+.model-tabs :deep(.el-tabs__header) {
+  margin-bottom: 18px;
+}
+
+.model-tabs :deep(.el-tabs__item) {
+  padding: 0 18px;
+  height: 44px;
+}
+
 .tab-toolbar {
+  display: flex;
+  justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+@media (max-width: 1300px) {
+  .stat-grid--6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .stat-grid--6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

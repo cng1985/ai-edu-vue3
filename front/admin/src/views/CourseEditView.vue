@@ -1,85 +1,112 @@
 <template>
-  <div v-loading="loading">
-    <div class="page-header">
-      <div style="display: flex; align-items: center; gap: 12px">
-        <el-button :icon="ArrowLeft" @click="$router.push('/courses')">返回</el-button>
-        <h2>{{ course?.icon }} {{ course?.title || '课程编辑' }}</h2>
+  <div v-loading="loading" class="page">
+    <PageHeader
+      back
+      eyebrow="课程管理"
+      :title="course?.title || '课程编辑'"
+      :subtitle="course?.description || '编辑课程章节内容与发布状态'"
+      @back="$router.push('/courses')"
+    >
+      <template #title-extra>
         <el-tag :type="course?.status === 'published' ? 'success' : 'info'" size="small">
           {{ course?.status === 'published' ? '已发布' : '草稿' }}
         </el-tag>
-      </div>
+      </template>
       <el-button type="primary" :icon="Plus" @click="openChapterDialog()">新增章节</el-button>
-    </div>
+    </PageHeader>
 
-    <el-row :gutter="16">
-      <el-col :span="8">
-        <el-card shadow="never">
-          <template #header><span>章节列表 ({{ course?.chapters?.length || 0 }})</span></template>
-          <div
+    <div class="editor">
+      <aside class="panel chapters">
+        <div class="panel__head">
+          <h3 class="panel__title">
+            <span class="panel__title-icon" :style="{ background: (course?.accent || '#6b5cff') + '1f', color: course?.accent || 'var(--primary)' }">{{ course?.icon || '📚' }}</span>
+            章节列表
+          </h3>
+          <span class="muted num">{{ course?.chapters?.length || 0 }} 章</span>
+        </div>
+        <div class="panel__body chapters__list">
+          <button
             v-for="(ch, idx) in course?.chapters || []"
             :key="ch.id"
-            class="chapter-item"
-            :class="{ active: selectedChapter?.id === ch.id }"
+            type="button"
+            class="chapter"
+            :class="{ 'chapter--active': selectedChapter?.id === ch.id }"
             @click="selectChapter(ch)"
           >
-            <div class="chapter-item__title">{{ idx + 1 }}. {{ ch.title }}</div>
-            <div class="chapter-item__meta">
-              <el-tag size="small" :type="ch.status === 'published' ? 'success' : 'info'">
-                {{ ch.status === 'published' ? '已发布' : '草稿' }}
-              </el-tag>
-              <span>{{ ch.minutes }} 分钟</span>
+            <span class="chapter__index num">{{ String(idx + 1).padStart(2, '0') }}</span>
+            <span class="chapter__main">
+              <span class="chapter__title">{{ ch.title }}</span>
+              <span class="chapter__meta">
+                <span class="chapter__dot" :class="ch.status === 'published' ? 'chapter__dot--on' : ''" />
+                {{ ch.status === 'published' ? '已发布' : '草稿' }} · {{ ch.minutes }} 分钟
+              </span>
+            </span>
+            <el-icon :size="14" class="chapter__arrow"><ArrowRight /></el-icon>
+          </button>
+          <el-empty v-if="!course?.chapters?.length" description="暂无章节" :image-size="80" />
+        </div>
+      </aside>
+
+      <section class="panel">
+        <template v-if="selectedChapter">
+          <div class="panel__head">
+            <h3 class="panel__title">
+              <span class="panel__title-icon"><el-icon><EditPen /></el-icon></span>
+              <span class="ellipsis">{{ selectedChapter.title }}</span>
+            </h3>
+            <div class="toolbar">
+              <el-button size="small" @click="openChapterDialog(selectedChapter)">设置</el-button>
+              <el-popconfirm title="确定删除该章节？" @confirm="handleDeleteChapter">
+                <template #reference>
+                  <el-button size="small" type="danger" plain>删除</el-button>
+                </template>
+              </el-popconfirm>
             </div>
           </div>
-          <el-empty v-if="!course?.chapters?.length" description="暂无章节" />
-        </el-card>
-      </el-col>
 
-      <el-col :span="16">
-        <el-card v-if="selectedChapter" shadow="never">
-          <template #header>
-            <div style="display: flex; justify-content: space-between; align-items: center">
-              <span>编辑章节：{{ selectedChapter.title }}</span>
-              <div>
-                <el-button size="small" @click="openChapterDialog(selectedChapter)">设置</el-button>
-                <el-popconfirm title="确定删除该章节？" @confirm="handleDeleteChapter">
-                  <template #reference>
-                    <el-button size="small" type="danger">删除</el-button>
-                  </template>
-                </el-popconfirm>
+          <div class="panel__body">
+            <div class="meta-row">
+              <div class="field field--grow">
+                <label>标题</label>
+                <el-input v-model="chapterForm.title" />
+              </div>
+              <div class="field">
+                <label>时长（分钟）</label>
+                <el-input-number v-model="chapterForm.minutes" :min="1" style="width: 140px" />
+              </div>
+              <div class="field">
+                <label>状态</label>
+                <el-select v-model="chapterForm.status" style="width: 130px">
+                  <el-option label="草稿" value="draft" />
+                  <el-option label="已发布" value="published" />
+                </el-select>
               </div>
             </div>
-          </template>
 
-          <el-form label-width="80px">
-            <el-form-item label="标题">
-              <el-input v-model="chapterForm.title" />
-            </el-form-item>
-            <el-form-item label="时长">
-              <el-input-number v-model="chapterForm.minutes" :min="1" />
-              <span style="margin-left: 8px; color: #9ca3af">分钟</span>
-            </el-form-item>
-            <el-form-item label="状态">
-              <el-select v-model="chapterForm.status" style="width: 140px">
-                <el-option label="草稿" value="draft" />
-                <el-option label="已发布" value="published" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="内容">
-              <el-input v-model="chapterForm.content" type="textarea" :rows="16" placeholder="Markdown 格式" />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" :loading="saving" @click="handleSaveChapter">保存章节</el-button>
-            </el-form-item>
-          </el-form>
+            <div class="split">
+              <div class="field">
+                <label>内容（Markdown）</label>
+                <el-input v-model="chapterForm.content" type="textarea" :rows="22" placeholder="使用 Markdown 编写章节内容…" class="md-input" />
+              </div>
+              <div class="field">
+                <label>实时预览</label>
+                <div class="markdown-preview preview" v-html="previewHtml"></div>
+              </div>
+            </div>
+          </div>
 
-          <el-divider>内容预览</el-divider>
-          <div class="markdown-preview" v-html="previewHtml"></div>
-        </el-card>
-        <el-card v-else shadow="never">
+          <div class="panel__foot foot">
+            <span class="muted">最后修改会即时同步到学习端（已发布章节）</span>
+            <el-button type="primary" :loading="saving" @click="handleSaveChapter">
+              <el-icon class="el-icon--left"><Check /></el-icon>保存章节
+            </el-button>
+          </div>
+        </template>
+        <div v-else class="panel__body empty">
           <el-empty description="请选择左侧章节进行编辑" />
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+      </section>
+    </div>
 
     <el-dialog v-model="chapterDialogVisible" :title="chapterEditing ? '编辑章节设置' : '新增章节'" width="480px">
       <el-form :model="chapterMeta" label-width="80px">
@@ -104,10 +131,11 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, Plus } from '@element-plus/icons-vue'
+import { Plus, ArrowRight, EditPen, Check } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { marked } from 'marked'
 import { coursesApi } from '../api'
+import PageHeader from '../components/common/PageHeader.vue'
 
 const route = useRoute()
 const loading = ref(false)
@@ -195,34 +223,193 @@ onMounted(loadCourse)
 </script>
 
 <style scoped>
-.chapter-item {
+.editor {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.chapters {
+  position: sticky;
+  top: calc(var(--header-height) + 20px);
+}
+
+.chapters__list {
   padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-bottom: 4px;
-  transition: background 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
 }
 
-.chapter-item:hover {
-  background: #f3f4f6;
-}
-
-.chapter-item.active {
-  background: #eef2ff;
-  border-left: 3px solid #6366f1;
-}
-
-.chapter-item__title {
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.chapter-item__meta {
+.chapter {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.chapter:hover {
+  background: var(--surface-2);
+}
+
+.chapter--active {
+  background: var(--primary-soft);
+  border-color: var(--primary-soft-2);
+}
+
+.chapter__index {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--surface-3);
+  color: var(--text-3);
   font-size: 12px;
-  color: #9ca3af;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.chapter--active .chapter__index {
+  background: var(--primary);
+  color: #fff;
+}
+
+.chapter__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.chapter__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.chapter__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+
+.chapter__dot--on {
+  background: var(--success);
+}
+
+.chapter__arrow {
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity var(--t-fast);
+}
+
+.chapter--active .chapter__arrow,
+.chapter:hover .chapter__arrow {
+  opacity: 1;
+}
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 420px;
+}
+
+.meta-row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field--grow {
+  flex: 1;
+  min-width: 200px;
+}
+
+.field label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.md-input :deep(.el-textarea__inner) {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  border-radius: 12px !important;
+}
+
+.preview {
+  height: 100%;
+  min-height: 300px;
+  max-height: 520px;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.empty {
+  min-height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1100px) {
+  .editor {
+    grid-template-columns: 1fr;
+  }
+
+  .chapters {
+    position: static;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
