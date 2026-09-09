@@ -5,7 +5,9 @@ const props = defineProps({
   percent: { type: Number, default: 0 },
   size: { type: Number, default: 64 },
   stroke: { type: Number, default: 6 },
-  color: { type: String, default: 'var(--primary)' }
+  color: { type: String, default: 'var(--primary)' },
+  track: { type: String, default: 'var(--surface-3)' },
+  showText: { type: Boolean, default: true }
 })
 
 const radius = computed(() => (props.size - props.stroke) / 2)
@@ -22,7 +24,7 @@ const offset = computed(
       :cy="size / 2"
       :r="radius"
       fill="none"
-      stroke="var(--border)"
+      :stroke="track"
       :stroke-width="stroke"
     />
     <circle
@@ -39,11 +41,13 @@ const offset = computed(
       class="progress-ring__value"
     />
     <text
+      v-if="showText"
       :x="size / 2"
       :y="size / 2"
       text-anchor="middle"
       dominant-baseline="central"
       class="progress-ring__text"
+      :style="{ fontSize: Math.max(12, size * 0.2) + 'px' }"
     >
       {{ Math.round(percent) }}%
     </text>
@@ -51,13 +55,19 @@ const offset = computed(
 </template>
 
 <style scoped>
+.progress-ring {
+  display: block;
+  flex-shrink: 0;
+}
+
 .progress-ring__value {
-  transition: stroke-dashoffset 0.5s ease;
+  transition: stroke-dashoffset 0.6s var(--ease);
 }
 
 .progress-ring__text {
-  font-size: 13px;
+  font-family: 'Sora', 'Noto Sans SC', sans-serif;
   font-weight: 700;
+  letter-spacing: -0.02em;
   fill: var(--text);
 }
 </style>

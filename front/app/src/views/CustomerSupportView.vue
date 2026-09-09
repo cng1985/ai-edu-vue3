@@ -1,6 +1,7 @@
 <script setup>
 import { ref, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useCustomerStore } from '../stores/customer'
+import Icon from '../components/Icon.vue'
 
 const customer = useCustomerStore()
 const input = ref('')
@@ -9,7 +10,7 @@ const showNewForm = ref(false)
 const scrollArea = ref(null)
 
 const statusLabel = { open: '待处理', pending: '处理中', closed: '已关闭' }
-const statusClass = { open: 'status--open', pending: 'status--pending', closed: 'status--closed' }
+const statusClass = { open: 'tag--warning', pending: 'tag--info', closed: 'tag--neutral' }
 
 function formatTime(ts) {
   if (!ts) return ''
@@ -51,6 +52,11 @@ function onKeydown(e) {
   }
 }
 
+function startNew() {
+  showNewForm.value = true
+  customer.activeTicketId = null
+}
+
 watch(() => customer.messages.length, scrollToBottom)
 
 onMounted(async () => {
@@ -68,62 +74,77 @@ onUnmounted(() => customer.teardownWS())
 </script>
 
 <template>
-  <div class="support">
-    <header class="support__header">
+  <div class="page support">
+    <header class="page-header page-header--split">
       <div>
+        <span class="eyebrow">在线服务</span>
         <h1>客户咨询</h1>
         <p>
           在线联系客服，实时沟通学习问题与平台使用疑问。
-          <span class="support__conn" :class="{ 'support__conn--on': customer.connected }">
-            {{ customer.connected ? '● 已连接' : '○ 连接中…' }}
-          </span>
         </p>
       </div>
-      <button class="btn btn--primary" @click="showNewForm = true; customer.activeTicketId = null">
-        新建咨询
-      </button>
+      <div class="support__head-actions">
+        <span class="support__conn" :class="{ 'support__conn--on': customer.connected }">
+          <i></i>{{ customer.connected ? '已连接' : '连接中…' }}
+        </span>
+        <button class="btn btn--primary" @click="startNew">
+          <Icon name="plus" :size="15" :stroke="2.5" /> 新建咨询
+        </button>
+      </div>
     </header>
 
     <div class="support__body">
-      <aside class="support__sidebar">
+      <aside class="support__sidebar card">
+        <div class="support__sidebar-head">
+          <strong>我的咨询</strong>
+          <span class="tag tag--neutral">{{ customer.tickets.length }}</span>
+        </div>
         <div v-if="customer.loading && !customer.tickets.length" class="support__empty-list">加载中…</div>
-        <div v-else-if="!customer.tickets.length" class="support__empty-list">暂无咨询记录</div>
+        <div v-else-if="!customer.tickets.length" class="support__empty-list">
+          <Icon name="headset" :size="28" />
+          <span>暂无咨询记录</span>
+        </div>
         <button
           v-for="t in customer.tickets"
           :key="t.id"
           class="support__ticket"
-          :class="{ 'support__ticket--active': t.id === customer.activeTicketId }"
+          :class="{ 'support__ticket--active': t.id === customer.activeTicketId && !showNewForm }"
           @click="showNewForm = false; customer.selectTicket(t.id)"
         >
           <div class="support__ticket-top">
             <strong>{{ t.subject }}</strong>
-            <span class="support__status" :class="statusClass[t.status]">{{ statusLabel[t.status] }}</span>
+            <span class="tag" :class="statusClass[t.status]">{{ statusLabel[t.status] }}</span>
           </div>
           <p class="support__ticket-preview">{{ t.lastMessage || '暂无消息' }}</p>
           <time>{{ formatTime(t.lastMessageAt) }}</time>
         </button>
       </aside>
 
-      <main class="support__chat">
+      <main class="support__chat card">
         <div v-if="showNewForm || !customer.activeTicketId" class="support__new">
+          <div class="support__new-icon"><Icon name="headset" :size="26" /></div>
           <h2>发起新咨询</h2>
-          <input v-model="newSubject" class="support__input-subject" placeholder="咨询主题（可选）" />
+          <p>描述你遇到的问题，客服会尽快回复。</p>
+          <input v-model="newSubject" class="input" placeholder="咨询主题（可选）" />
           <textarea
             v-model="input"
-            class="support__textarea"
+            class="textarea"
             rows="5"
             placeholder="请描述您的问题…"
             @keydown="onKeydown"
           />
-          <button class="btn btn--primary" :disabled="customer.sending || !input.trim()" @click="handleCreate">
-            {{ customer.sending ? '提交中…' : '提交咨询' }}
+          <button class="btn btn--primary btn--lg" :disabled="customer.sending || !input.trim()" @click="handleCreate">
+            <Icon name="send" :size="15" /> {{ customer.sending ? '提交中…' : '提交咨询' }}
           </button>
         </div>
 
         <template v-else>
           <div class="support__chat-header">
-            <h2>{{ customer.activeTicket?.subject }}</h2>
-            <span class="support__status" :class="statusClass[customer.activeTicket?.status]">
+            <div>
+              <h2>{{ customer.activeTicket?.subject }}</h2>
+              <small>工单 #{{ String(customer.activeTicket?.id || '').slice(-6) }}</small>
+            </div>
+            <span class="tag" :class="statusClass[customer.activeTicket?.status]">
               {{ statusLabel[customer.activeTicket?.status] }}
             </span>
           </div>
@@ -142,20 +163,19 @@ onUnmounted(() => customer.teardownWS())
               <div class="support__msg-bubble">{{ msg.content }}</div>
             </div>
             <div v-if="customer.activeTicket?.status === 'closed'" class="support__closed-tip">
-              此咨询已关闭，如需帮助请新建咨询
+              <Icon name="lock" :size="13" /> 此咨询已关闭，如需帮助请新建咨询
             </div>
           </div>
 
           <div v-if="customer.activeTicket?.status !== 'closed'" class="support__composer">
             <textarea
               v-model="input"
-              class="support__textarea"
               rows="2"
               placeholder="输入消息，Enter 发送…"
               @keydown="onKeydown"
             />
-            <button class="btn btn--primary" :disabled="customer.sending || !input.trim()" @click="handleSend">
-              发送
+            <button class="support__send" :disabled="customer.sending || !input.trim()" title="发送" @click="handleSend">
+              <Icon name="send" :size="16" />
             </button>
           </div>
         </template>
@@ -166,72 +186,90 @@ onUnmounted(() => customer.teardownWS())
 
 <style scoped>
 .support {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 4px;
+  max-width: 1160px;
 }
 
-.support__header {
+.support__head-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.support__header h1 {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 6px;
-}
-
-.support__header p {
-  color: var(--text-2);
-  font-size: 14px;
+  align-items: center;
+  gap: 12px;
 }
 
 .support__conn {
-  margin-left: 8px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-3);
 }
 
+.support__conn i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+
 .support__conn--on {
-  color: #10b981;
+  background: var(--success-soft);
+  color: var(--success-strong);
+}
+
+.support__conn--on i {
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(15, 185, 129, 0.2);
 }
 
 .support__body {
   display: grid;
-  grid-template-columns: 280px 1fr;
-  gap: 16px;
-  min-height: 520px;
+  grid-template-columns: 300px 1fr;
+  gap: 18px;
+  min-height: 560px;
 }
 
 .support__sidebar {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow-y: auto;
-  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 640px;
+}
+
+.support__sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
 }
 
 .support__empty-list {
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 24px;
   text-align: center;
   color: var(--text-3);
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .support__ticket {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 14px 16px;
+  padding: 14px 18px;
   border: none;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--border);
   background: transparent;
+  font: inherit;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--t-fast);
 }
 
 .support__ticket:hover {
@@ -240,6 +278,7 @@ onUnmounted(() => customer.teardownWS())
 
 .support__ticket--active {
   background: var(--primary-soft);
+  border-left-color: var(--primary);
 }
 
 .support__ticket-top {
@@ -258,64 +297,59 @@ onUnmounted(() => customer.teardownWS())
 }
 
 .support__ticket-preview {
+  margin: 0 0 6px;
   font-size: 12.5px;
-  color: var(--text-3);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-bottom: 4px;
 }
 
 .support__ticket time {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-3);
 }
 
 .support__chat {
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  min-height: 520px;
+  min-height: 560px;
+  overflow: hidden;
 }
 
 .support__chat-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 16px 20px;
+  padding: 16px 22px;
   border-bottom: 1px solid var(--border);
 }
 
 .support__chat-header h2 {
+  margin: 0;
   font-size: 16px;
-  font-weight: 600;
 }
 
-.support__status {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 999px;
+.support__chat-header small {
+  color: var(--text-3);
+  font-size: 12px;
 }
-
-.status--open { background: #fef3c7; color: #b45309; }
-.status--pending { background: #dbeafe; color: #1d4ed8; }
-.status--closed { background: #f3f4f6; color: #6b7280; }
 
 .support__messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: var(--surface-2);
 }
 
 .support__msg {
-  max-width: 75%;
+  max-width: 72%;
   align-self: flex-start;
+  animation: fade-up 0.25s var(--ease) both;
 }
 
 .support__msg--mine {
@@ -326,9 +360,13 @@ onUnmounted(() => customer.teardownWS())
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   font-size: 12px;
   color: var(--text-3);
+}
+
+.support__msg-meta strong {
+  color: var(--text-2);
 }
 
 .support__msg--mine .support__msg-meta {
@@ -336,75 +374,126 @@ onUnmounted(() => customer.teardownWS())
 }
 
 .support__msg-bubble {
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--surface-2);
+  padding: 11px 15px;
+  border-radius: 16px;
+  border-top-left-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  box-shadow: var(--shadow-xs);
 }
 
 .support__msg--mine .support__msg-bubble {
-  background: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  border-color: transparent;
   color: #fff;
+  border-radius: 16px;
+  border-top-right-radius: 6px;
+  box-shadow: 0 6px 16px var(--primary-glow);
 }
 
 .support__closed-tip {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   color: var(--text-3);
   font-size: 13px;
   padding: 12px;
 }
 
-.support__composer,
 .support__new {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  max-width: 520px;
+  margin: auto;
+  padding: 40px 24px;
+  width: 100%;
+}
+
+.support__new-icon {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
 }
 
 .support__new h2 {
-  font-size: 16px;
-  font-weight: 600;
+  margin: 6px 0 0;
+  font-size: 22px;
 }
 
-.support__input-subject {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+.support__new p {
+  margin: -6px 0 8px;
+  color: var(--text-2);
   font-size: 14px;
-  background: var(--surface-2);
-}
-
-.support__textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  resize: vertical;
-  background: var(--surface-2);
-  font-family: inherit;
 }
 
 .support__composer {
-  flex-direction: row;
+  display: flex;
+  gap: 10px;
   align-items: flex-end;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
 }
 
-.support__composer .support__textarea {
+.support__composer textarea {
   flex: 1;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.55;
+  resize: none;
+  background: var(--surface);
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-@media (max-width: 768px) {
+.support__composer textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft-2);
+}
+
+.support__send {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 14px var(--primary-glow);
+  transition: transform var(--t-fast), opacity var(--t-fast);
+}
+
+.support__send:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.support__send:disabled {
+  opacity: 0.4;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+@media (max-width: 860px) {
   .support__body {
     grid-template-columns: 1fr;
   }
+
   .support__sidebar {
-    max-height: 200px;
+    max-height: 240px;
   }
 }
 </style>

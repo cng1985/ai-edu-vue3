@@ -22,8 +22,9 @@ function resize() {
   const canvas = canvasRef.value
   if (!canvas) return
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  w = window.innerWidth
-  h = window.innerHeight
+  const host = canvas.parentElement
+  w = host?.clientWidth || window.innerWidth
+  h = host?.clientHeight || window.innerHeight
   canvas.width = w * dpr
   canvas.height = h * dpr
   canvas.style.width = w + 'px'
@@ -37,8 +38,8 @@ function resize() {
 function draw() {
   if (!ctx) return
   ctx.clearRect(0, 0, w, h)
-  ctx.fillStyle = 'rgba(23, 114, 246, 0.28)'
-  ctx.strokeStyle = 'rgba(23, 114, 246, 0.12)'
+  ctx.fillStyle = 'rgba(199, 191, 255, 0.55)'
+  ctx.strokeStyle = 'rgba(160, 113, 255, 0.22)'
   ctx.lineWidth = 0.8
 
   for (let i = 0; i < balls.length; i++) {
@@ -88,7 +89,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .particles {
-  position: fixed;
+  position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;

@@ -4,6 +4,8 @@ import { useRoute } from 'vue-router'
 import { getQuiz } from '../data/quizzes'
 import { getCourse } from '../data/courses'
 import { useLearningStore } from '../stores/learning'
+import ProgressRing from '../components/ProgressRing.vue'
+import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const learning = useLearningStore()
@@ -40,6 +42,9 @@ const score = computed(() => {
 const scorePercent = computed(() =>
   quiz.value ? Math.round((score.value / quiz.value.questions.length) * 100) : 0
 )
+
+const scoreTone = computed(() => (scorePercent.value >= 80 ? 'success' : scorePercent.value >= 60 ? 'warning' : 'danger'))
+const scoreColor = computed(() => ({ success: '#0fb981', warning: '#f59e0b', danger: '#ef4d63' }[scoreTone.value]))
 
 function choose(qIndex, optIndex) {
   if (submitted.value) return
@@ -78,47 +83,45 @@ function optionClass(qIndex, optIndex) {
 </script>
 
 <template>
-  <div class="page" v-if="quiz">
-    <router-link to="/quiz" class="back">← 返回测验列表</router-link>
+  <div class="page quiz-page" v-if="quiz">
+    <router-link to="/quiz" class="back-link"><Icon name="arrowLeft" :size="15" /> 返回测验列表</router-link>
 
     <header class="page-header">
+      <div class="quiz-tags">
+        <span v-if="course" class="tag tag--neutral">{{ course.icon }} {{ course.title }}</span>
+        <span class="tag">{{ quiz.questions.length }} 道题</span>
+      </div>
       <h1>{{ quiz.title }}</h1>
       <p>{{ quiz.description }}</p>
     </header>
 
     <section v-if="submitted" class="result card fade-up">
-      <div class="result__score" :class="{
-        'result__score--good': scorePercent >= 80,
-        'result__score--mid': scorePercent >= 60 && scorePercent < 80,
-        'result__score--bad': scorePercent < 60
-      }">
-        {{ scorePercent }}
-        <span>分</span>
-      </div>
+      <ProgressRing :percent="scorePercent" :size="128" :stroke="11" :color="scoreColor" />
       <div class="result__info">
+        <span class="tag" :class="`tag--${scoreTone}`">{{ scorePercent >= 80 ? '优秀' : scorePercent >= 60 ? '及格' : '需加强' }}</span>
         <h2>
-          {{ scorePercent >= 80 ? '🎉 优秀！' : scorePercent >= 60 ? '👍 及格，再接再厉' : '💪 继续努力' }}
+          {{ scorePercent >= 80 ? '太棒了，掌握得很扎实！' : scorePercent >= 60 ? '不错，再接再厉' : '别灰心，回顾后再来一次' }}
         </h2>
         <p>
-          答对 {{ score }} / {{ quiz.questions.length }} 题。
-          {{ scorePercent < 80 && course ? '建议回顾课程后重新测验。' : '' }}
+          答对 <strong class="num">{{ score }}</strong> / {{ quiz.questions.length }} 题。
+          {{ scorePercent < 80 && course ? '建议回顾课程后重新测验。' : '可以继续挑战其他课程的测验。' }}
         </p>
         <div class="result__actions">
-          <button class="btn btn--primary" @click="retry">重新测验</button>
+          <button class="btn btn--primary" @click="retry"><Icon name="refresh" :size="15" /> 重新测验</button>
           <router-link v-if="course" :to="`/courses/${course.id}`" class="btn btn--ghost">
-            回顾课程
+            <Icon name="book" :size="15" /> 回顾课程
           </router-link>
         </div>
       </div>
     </section>
 
     <div v-else class="progress-bar card">
-      <span>已作答 {{ answeredCount }} / {{ quiz.questions.length }}</span>
-      <div class="progress-bar__track">
-        <div
-          class="progress-bar__fill"
-          :style="{ width: (answeredCount / quiz.questions.length) * 100 + '%' }"
-        ></div>
+      <span class="progress-bar__label">已作答 <b class="num">{{ answeredCount }}</b> / {{ quiz.questions.length }}</span>
+      <div class="progress progress--thin">
+        <div :style="{ width: (answeredCount / quiz.questions.length) * 100 + '%' }"></div>
+      </div>
+      <div class="progress-bar__dots">
+        <i v-for="(a, i) in answers" :key="i" :class="{ on: a !== null }"></i>
       </div>
     </div>
 
@@ -126,10 +129,11 @@ function optionClass(qIndex, optIndex) {
       v-for="(question, qi) in quiz.questions"
       :key="qi"
       class="quiz-question card"
+      :class="{ 'quiz-question--right': submitted && answers[qi] === question.answer, 'quiz-question--miss': submitted && answers[qi] !== question.answer }"
     >
       <h3>
-        <span class="quiz-question__no">{{ qi + 1 }}</span>
-        {{ question.text }}
+        <span class="quiz-question__no num">{{ qi + 1 }}</span>
+        <span>{{ question.text }}</span>
       </h3>
       <div class="quiz-question__options">
         <button
@@ -140,47 +144,49 @@ function optionClass(qIndex, optIndex) {
           @click="choose(qi, oi)"
         >
           <span class="quiz-option__letter">{{ 'ABCD'[oi] }}</span>
-          <span>{{ opt }}</span>
-          <span v-if="submitted && oi === question.answer" class="quiz-option__mark">✓</span>
-          <span
+          <span class="quiz-option__text">{{ opt }}</span>
+          <Icon v-if="submitted && oi === question.answer" name="check" :size="16" :stroke="3" class="quiz-option__mark" />
+          <Icon
             v-else-if="submitted && answers[qi] === oi && oi !== question.answer"
+            name="x"
+            :size="16"
+            :stroke="3"
             class="quiz-option__mark quiz-option__mark--wrong"
-          >✗</span>
+          />
         </button>
       </div>
       <div v-if="submitted" class="quiz-question__explanation">
-        <strong>解析：</strong>{{ question.explanation }}
+        <Icon name="sparkles" :size="15" />
+        <div><strong>解析</strong>{{ question.explanation }}</div>
       </div>
     </section>
 
     <div v-if="!submitted" class="submit-bar">
-      <button class="btn btn--primary submit-bar__btn" :disabled="!allAnswered" @click="submit">
+      <button class="btn btn--primary btn--lg submit-bar__btn" :disabled="!allAnswered" @click="submit">
         {{ allAnswered ? '提交答卷' : `还有 ${quiz.questions.length - answeredCount} 题未作答` }}
+        <Icon v-if="allAnswered" name="arrowRight" :size="16" />
       </button>
     </div>
   </div>
 
   <div class="page" v-else>
-    <div class="card" style="padding: 48px; text-align: center">
-      <p>未找到该测验。</p>
+    <div class="empty-state card">
+      <div class="empty-state__icon"><Icon name="alert" :size="30" /></div>
+      <h2>未找到该测验</h2>
       <router-link to="/quiz" class="btn btn--primary">返回测验列表</router-link>
     </div>
   </div>
 </template>
 
 <style scoped>
-.back {
-  display: inline-block;
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: var(--text-2);
-}
+.quiz-page { max-width: 880px; }
 
-.back:hover {
-  color: var(--primary);
-}
+.quiz-tags { display: flex; gap: 6px; margin-bottom: 12px; }
 
 .progress-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 5;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -189,85 +195,56 @@ function optionClass(qIndex, optIndex) {
   font-size: 13.5px;
   color: var(--text-2);
   white-space: nowrap;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.9);
 }
 
-.progress-bar__track {
-  flex: 1;
-  height: 8px;
-  background: var(--border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.progress-bar__fill {
-  height: 100%;
-  background: var(--primary);
-  border-radius: 999px;
-  transition: width 0.3s ease;
-}
+.progress-bar__label b { color: var(--text); }
+.progress-bar .progress { flex: 1; }
+.progress-bar__dots { display: flex; gap: 4px; }
+.progress-bar__dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-3); transition: background var(--t-fast); }
+.progress-bar__dots i.on { background: var(--primary); }
 
 .result {
   display: flex;
   align-items: center;
-  gap: 28px;
-  padding: 30px 34px;
+  gap: 30px;
+  padding: 32px 36px;
   margin-bottom: 24px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(120deg, #f6f3ff, #fff 60%);
 }
 
-.result__score {
-  font-size: 46px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.result__score span {
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.result__score--good { color: var(--success); }
-.result__score--mid { color: var(--warning); }
-.result__score--bad { color: var(--danger); }
-
-.result__info h2 {
-  margin: 0 0 6px;
-  font-size: 19px;
-}
-
-.result__info p {
-  margin: 0 0 14px;
-  color: var(--text-2);
-  font-size: 14px;
-}
-
-.result__actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.result__info h2 { margin: 10px 0 6px; font-size: 22px; }
+.result__info p { margin: 0 0 16px; color: var(--text-2); font-size: 14.5px; }
+.result__info p strong { color: var(--text); font-size: 16px; }
+.result__actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .quiz-question {
-  padding: 24px 28px;
+  padding: 26px 30px;
   margin-bottom: 16px;
+  border-left: 4px solid transparent;
+  transition: border-color var(--t);
 }
+.quiz-question--right { border-left-color: var(--success); }
+.quiz-question--miss { border-left-color: var(--danger); }
 
 .quiz-question h3 {
   display: flex;
-  gap: 12px;
-  margin: 0 0 16px;
-  font-size: 15.5px;
+  gap: 14px;
+  margin: 0 0 18px;
+  font-size: 16px;
   line-height: 1.6;
 }
 
 .quiz-question__no {
-  min-width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
   background: var(--primary-soft);
   color: var(--primary-strong);
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 13px;
   font-weight: 700;
 }
@@ -275,77 +252,65 @@ function optionClass(qIndex, optIndex) {
 .quiz-question__options {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
 }
 
 .quiz-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 13px 16px;
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 13px;
   background: var(--surface);
-  font-size: 14px;
+  font: inherit;
+  font-size: 14.5px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--t-fast);
   color: var(--text);
 }
 
-.quiz-option:hover {
-  border-color: var(--primary);
-}
-
-.quiz-option--chosen {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  font-weight: 600;
-}
-
-.quiz-option--correct {
-  border-color: var(--success);
-  background: var(--success-soft);
-  font-weight: 600;
-}
-
-.quiz-option--wrong {
-  border-color: var(--danger);
-  background: #fef2f2;
-}
+.quiz-option:hover { border-color: var(--primary); background: var(--primary-soft); }
 
 .quiz-option__letter {
-  min-width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--surface-2);
-  border-radius: 7px;
-  font-size: 12px;
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  background: var(--surface-3);
+  border-radius: 8px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--text-2);
 }
 
-.quiz-option__mark {
-  margin-left: auto;
-  font-weight: 800;
-  color: var(--success);
-}
+.quiz-option__text { flex: 1; }
 
-.quiz-option__mark--wrong {
-  color: var(--danger);
-}
+.quiz-option--chosen { border-color: var(--primary); background: var(--primary-soft); font-weight: 600; }
+.quiz-option--chosen .quiz-option__letter { background: var(--primary); color: #fff; }
+.quiz-option--correct { border-color: var(--success); background: var(--success-soft); font-weight: 600; }
+.quiz-option--correct .quiz-option__letter { background: var(--success); color: #fff; }
+.quiz-option--wrong { border-color: var(--danger); background: var(--danger-soft); }
+.quiz-option--wrong .quiz-option__letter { background: var(--danger); color: #fff; }
+
+.quiz-option__mark { color: var(--success); }
+.quiz-option__mark--wrong { color: var(--danger); }
 
 .quiz-question__explanation {
-  margin-top: 14px;
-  padding: 12px 16px;
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
   background: var(--surface-2);
-  border-radius: var(--radius-sm);
+  border-radius: 13px;
   font-size: 13.5px;
   color: var(--text-2);
   line-height: 1.7;
 }
+
+.quiz-question__explanation .icon { flex-shrink: 0; margin-top: 4px; color: var(--primary); }
+.quiz-question__explanation strong { display: block; margin-bottom: 2px; color: var(--text); font-size: 12.5px; letter-spacing: 0.04em; }
 
 .submit-bar {
   position: sticky;
@@ -355,8 +320,12 @@ function optionClass(qIndex, optIndex) {
 }
 
 .submit-bar__btn {
-  padding: 13px 42px;
-  font-size: 15px;
-  box-shadow: var(--shadow);
+  padding: 14px 44px;
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 720px) {
+  .result { flex-direction: column; align-items: flex-start; }
+  .progress-bar__dots { display: none; }
 }
 </style>
