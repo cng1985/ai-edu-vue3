@@ -1,4 +1,48 @@
+// Package rbac 是角色与权限的唯一后端数据源：
+// 角色定义、权限码、默认角色权限映射均在此维护。
 package rbac
+
+// 角色常量
+const (
+	RoleAdmin    = "admin"
+	RoleReviewer = "reviewer"
+	RoleOperator = "operator"
+	RoleLearner  = "learner"
+	RoleGuest    = "guest"
+)
+
+// RoleNames 角色显示名
+var RoleNames = map[string]string{
+	RoleAdmin:    "管理员",
+	RoleReviewer: "审核员",
+	RoleOperator: "运营",
+	RoleLearner:  "学员",
+	RoleGuest:    "游客",
+}
+
+// Roles 返回全部角色（固定顺序，供列表展示）
+func Roles() []string {
+	return []string{RoleAdmin, RoleReviewer, RoleOperator, RoleLearner, RoleGuest}
+}
+
+// IsValidRole 判断角色是否为系统已定义角色
+func IsValidRole(role string) bool {
+	_, ok := RoleNames[role]
+	return ok
+}
+
+// AdminPortalRoles 允许登录管理后台的角色
+var AdminPortalRoles = []string{RoleAdmin, RoleReviewer, RoleOperator}
+
+// IsAdminRole 判断角色是否可访问管理后台
+func IsAdminRole(role string) bool {
+	for _, r := range AdminPortalRoles {
+		if r == role {
+			return true
+		}
+	}
+	return false
+}
 
 // 权限常量
 const (
@@ -71,7 +115,7 @@ type PermissionInfo struct {
 
 // DefaultRolePermissions 默认角色权限映射
 var DefaultRolePermissions = map[string][]string{
-	"admin": {
+	RoleAdmin: {
 		PermUserRead, PermUserCreate, PermUserUpdate, PermUserDelete,
 		PermCourseRead, PermCourseWrite, PermCourseDelete,
 		PermQuizRead, PermQuizWrite, PermQuizDelete,
@@ -82,13 +126,13 @@ var DefaultRolePermissions = map[string][]string{
 		PermKnowledgeRead, PermKnowledgeManage,
 		PermAiModelRead, PermAiModelManage,
 	},
-	"reviewer": {
+	RoleReviewer: {
 		PermCourseRead, PermQuizRead,
 		PermReviewRead, PermReviewApprove,
 		PermDashboard, PermAIChat,
 		PermKnowledgeRead,
 	},
-	"operator": {
+	RoleOperator: {
 		PermCourseRead, PermCourseWrite,
 		PermQuizRead, PermQuizWrite,
 		PermDashboard, PermAIChat,
@@ -96,31 +140,10 @@ var DefaultRolePermissions = map[string][]string{
 		PermDocumentRead, PermDocumentWrite, PermDocumentImport, PermDocumentExport,
 		PermKnowledgeRead,
 	},
-	"learner": {
+	RoleLearner: {
 		PermCourseRead, PermQuizRead, PermAIChat, PermCustomerChat,
 	},
-	"guest": {
+	RoleGuest: {
 		PermAIChat,
 	},
-}
-
-func HasPermission(role, perm string, custom map[string][]string) bool {
-	perms := custom[role]
-	if perms == nil {
-		perms = DefaultRolePermissions[role]
-	}
-	for _, p := range perms {
-		if p == perm {
-			return true
-		}
-	}
-	return false
-}
-
-func IsAdminRole(role string) bool {
-	return role == "admin" || role == "reviewer" || role == "operator"
-}
-
-func IsAppRole(role string) bool {
-	return role == "learner" || role == "guest"
 }

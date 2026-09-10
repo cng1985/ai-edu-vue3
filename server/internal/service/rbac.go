@@ -2,27 +2,29 @@ package service
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
-	"github.com/cng1985/ai-learning-server/internal/middleware"
 	"github.com/cng1985/ai-learning-server/internal/model"
 	"github.com/cng1985/ai-learning-server/internal/repository"
+	"github.com/cng1985/ai-learning-server/pkg/apperr"
 	"github.com/cng1985/ai-learning-server/pkg/rbac"
 	"gorm.io/datatypes"
 )
 
+// RBACService 管理角色权限：数据库为持久化来源，Resolver 为运行时唯一读取入口。
+// 启动时调用 SyncResolver 灌入数据，UpdateRole 修改后立即重新同步，
+// 因此鉴权中间件与业务层读到的权限始终一致。
 type RBACService struct {
-	roles *repository.RoleRepo
+	roles    *repository.RoleRepo
+	resolver *rbac.Resolver
 }
 
-func NewRBACService(roles *repository.RoleRepo) *RBACService {
-	return &RBACService{roles: roles}
+func NewRBACService(roles *repository.RoleRepo, resolver *rbac.Resolver) *RBACService {
+	return &RBACService{roles: roles, resolver: resolver}
 }
 
-var roleNames = map[string]string{
-	"admin": "管理员", "reviewer": "审核员", "operator": "运营",
-	"learner": "学员", "guest": "游客",
+func (s *RBACService) Resolver() *rbac.Resolver {
+	return s.resolver
 }
 
 func (s *RBACService) ListPermissions() []rbac.PermissionInfo {
@@ -30,19 +32,11 @@ func (s *RBACService) ListPermissions() []rbac.PermissionInfo {
 }
 
 func (s *RBACService) GetRoleName(role string) string {
-	return roleNames[role]
+	return rbac.RoleNames[role]
 }
 
 func (s *RBACService) GetPermissions(role string) []string {
-	custom, _ := s.loadCustomMap()
-	perms := custom[role]
-	if perms == nil {
-		perms = rbac.DefaultRolePermissions[role]
-	}
-	if perms == nil {
-		return []string{}
-	}
-	return perms
+	return s.resolver.Permissions(role)
 }
 
 func (s *RBACService) EnrichUser(user *model.User) model.AuthUser {
@@ -54,24 +48,20 @@ func (s *RBACService) EnrichUser(user *model.User) model.AuthUser {
 }
 
 func (s *RBACService) ListRoles() ([]model.RoleInfo, error) {
-	custom, _ := s.loadCustomMap()
-	roles := []string{"admin", "reviewer", "operator", "learner", "guest"}
 	var result []model.RoleInfo
-	for _, role := range roles {
-		perms := custom[role]
-		if perms == nil {
-			perms = rbac.DefaultRolePermissions[role]
-		}
+	for _, role := range rbac.Roles() {
 		result = append(result, model.RoleInfo{
-			Role: role, Name: roleNames[role], Permissions: perms,
+			Role:        role,
+			Name:        rbac.RoleNames[role],
+			Permissions: s.resolver.Permissions(role),
 		})
 	}
 	return result, nil
 }
 
 func (s *RBACService) UpdateRole(role string, permissions []string) error {
-	if roleNames[role] == "" {
-		return errors.New("角色不存在")
+	if !rbac.IsValidRole(role) {
+		return apperr.NotFound("角色不存在")
 	}
 	b, _ := json.Marshal(permissions)
 	rp := model.RolePermission{
@@ -80,26 +70,21 @@ func (s *RBACService) UpdateRole(role string, permissions []string) error {
 	if err := s.roles.Upsert(&rp); err != nil {
 		return err
 	}
-	custom, _ := s.loadCustomMap()
-	middleware.SetCustomPermissions(custom)
-	return nil
+	return s.SyncResolver()
 }
 
-func (s *RBACService) SyncToMiddleware() {
-	custom, _ := s.loadCustomMap()
-	middleware.SetCustomPermissions(custom)
-}
-
-func (s *RBACService) loadCustomMap() (map[string][]string, error) {
+// SyncResolver 从数据库加载自定义角色权限并同步到 Resolver。
+func (s *RBACService) SyncResolver() error {
 	list, err := s.roles.List()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	m := map[string][]string{}
+	custom := map[string][]string{}
 	for _, rp := range list {
 		var perms []string
 		_ = json.Unmarshal(rp.Permissions, &perms)
-		m[rp.Role] = perms
+		custom[rp.Role] = perms
 	}
-	return m, nil
+	s.resolver.SetCustom(custom)
+	return nil
 }

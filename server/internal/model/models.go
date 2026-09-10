@@ -2,6 +2,12 @@ package model
 
 import "gorm.io/datatypes"
 
+// 用户账号状态
+const (
+	UserStatusActive   = "active"
+	UserStatusDisabled = "disabled"
+)
+
 type User struct {
 	ID           string `gorm:"primaryKey;size:64" json:"id"`
 	Username     string `gorm:"uniqueIndex;size:50" json:"username"`
@@ -142,14 +148,6 @@ type RoleInfo struct {
 	Role        string   `json:"role"`
 	Name        string   `json:"name"`
 	Permissions []string `json:"permissions"`
-}
-
-type RegisterRequest struct {
-	Username    string `json:"username"`
-	Nickname    string `json:"nickname"`
-	Password    string `json:"password"`
-	Avatar      string `json:"avatar"`
-	AvatarColor string `json:"avatarColor"`
 }
 
 type AISource struct {
