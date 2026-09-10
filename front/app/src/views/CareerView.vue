@@ -5,6 +5,7 @@ import { careers, frontendPath } from '../data/careerPath'
 import { useGrowthStore } from '../stores/growth'
 import { aiApi } from '../api'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+import Icon from '../components/Icon.vue'
 
 const router = useRouter()
 const growth = useGrowthStore()
@@ -22,6 +23,7 @@ const interviewMessages = ref([])
 const interviewGenerating = ref(false)
 let cancelInterview = null
 
+const steps = ['选择职业', '确认目标', '查看分解']
 const selected = computed(() => careers.find((item) => item.id === selectedId.value))
 const canCreate = computed(() => selectedId.value === 'frontend')
 
@@ -94,29 +96,39 @@ async function confirmGoal() {
       <p>通过 AI 职业访谈了解你的方向，再生成可执行、可评估的学习路径。</p>
     </header>
 
-    <div class="steps">
-      <div v-for="item in 3" :key="item" class="step" :class="{ active: step >= item }">
-        <span>{{ item }}</span>
-        {{ ['选择职业', '确认目标', '查看分解'][item - 1] }}
-      </div>
-    </div>
+    <ol class="steps">
+      <li
+        v-for="(label, index) in steps"
+        :key="label"
+        class="step"
+        :class="{ 'step--active': step === index + 1, 'step--done': step > index + 1 }"
+      >
+        <span class="step__index">
+          <Icon v-if="step > index + 1" name="check" :size="13" :stroke="3" />
+          <template v-else>{{ index + 1 }}</template>
+        </span>
+        <span class="step__label">{{ label }}</span>
+      </li>
+    </ol>
 
+    <!-- 第一步：选择职业 -->
     <section v-if="step === 1" class="fade-up">
       <div class="ai-tip card">
-        <span class="ai-tip__icon">✨</span>
-        <div>
-          <strong>AI 推荐：Web 前端工程师（匹配度 92%）</strong>
+        <span class="ai-tip__icon"><Icon name="sparkles" :size="22" /></span>
+        <div class="ai-tip__body">
+          <strong>AI 推荐：Web 前端工程师 <span class="tag tag--success">匹配度 92%</span></strong>
           <p>适合希望快速看到成果、通过作品进入 IT 行业的学习者。目前 MVP 已为该方向准备完整路径。</p>
-          <button class="btn btn--ghost interview-toggle" @click="showInterview = !showInterview">
-            {{ showInterview ? '收起 AI 职业访谈' : '💬 开始 AI 职业访谈' }}
-          </button>
         </div>
+        <button class="btn btn--soft" @click="showInterview = !showInterview">
+          <Icon name="message" :size="15" />
+          {{ showInterview ? '收起职业访谈' : '开始 AI 职业访谈' }}
+        </button>
       </div>
 
-      <div v-if="showInterview" class="interview card">
+      <div v-if="showInterview" class="interview card fade-up">
         <div class="interview__messages">
           <p v-if="!interviewMessages.length" class="interview__hint">
-            告诉 AI 你的背景、兴趣和可投入时间，它会帮你分析适合的职业方向。
+            <Icon name="sparkles" :size="15" /> 告诉 AI 你的背景、兴趣和可投入时间，它会帮你分析适合的职业方向。
           </p>
           <div
             v-for="(msg, idx) in interviewMessages"
@@ -131,104 +143,125 @@ async function confirmGoal() {
         <div class="interview__composer">
           <input
             v-model="interviewInput"
+            class="input"
             placeholder="例如：在职测试，想转前端，每周 15 小时…"
             @keydown.enter="sendInterview"
           />
           <button class="btn btn--primary" :disabled="interviewGenerating || !interviewInput.trim()" @click="sendInterview">
-            发送
+            <Icon name="send" :size="15" /> 发送
           </button>
         </div>
       </div>
 
-      <div class="career-grid">
+      <div class="career-grid stagger">
         <button
           v-for="career in careers"
           :key="career.id"
-          class="career-card card"
-          :class="{ selected: selectedId === career.id }"
+          class="career-card card card--hover"
+          :class="{ 'career-card--selected': selectedId === career.id }"
           @click="selectCareer(career.id)"
         >
           <div class="career-card__top">
-            <span class="career-icon">{{ career.icon }}</span>
-            <span class="match">{{ career.match }}% 匹配</span>
+            <span class="career-card__icon">{{ career.icon }}</span>
+            <span class="tag tag--success">{{ career.match }}% 匹配</span>
           </div>
-          <small>{{ career.category }}</small>
+          <small class="career-card__category">{{ career.category }}</small>
           <h2>{{ career.name }}</h2>
           <p>{{ career.description }}</p>
           <div class="career-meta">
-            <span>难度 {{ '★'.repeat(career.difficulty) }}</span>
-            <span>需求 {{ career.demand }}</span>
+            <span><Icon name="star" :size="12" /> 难度 {{ '★'.repeat(career.difficulty) }}</span>
+            <span><Icon name="trend" :size="12" /> 需求 {{ career.demand }}</span>
             <span>{{ career.salary }}</span>
           </div>
+          <span class="career-card__check"><Icon name="check" :size="13" :stroke="3" /></span>
         </button>
       </div>
+
       <div v-if="selected" class="selection-actions">
-        <span v-if="!canCreate">该方向路径正在建设中，可先预览；当前可创建前端目标。</span>
-        <button class="btn btn--primary" :disabled="!canCreate" @click="step = 2">
-          以“{{ selected.name }}”为目标 →
+        <span v-if="!canCreate" class="selection-note"><Icon name="alert" :size="14" /> 该方向路径正在建设中，可先预览；当前可创建前端目标。</span>
+        <button class="btn btn--primary btn--lg" :disabled="!canCreate" @click="step = 2">
+          以“{{ selected.name }}”为目标 <Icon name="arrowRight" :size="16" />
         </button>
       </div>
     </section>
 
+    <!-- 第二步：确认条件 -->
     <section v-else-if="step === 2" class="goal-layout fade-up">
       <div class="goal-form card">
         <h2>确认你的目标条件</h2>
-        <label>
-          当前基础
-          <select v-model="baseLevel">
+        <p class="goal-form__desc">这些参数决定路径节奏与里程碑排布，之后可随时调整。</p>
+
+        <label class="field">
+          <span>当前基础</span>
+          <select v-model="baseLevel" class="select">
             <option>零基础</option><option>入门</option><option>进阶</option><option>熟练</option>
           </select>
         </label>
-        <label>
-          每周可投入时间
+
+        <label class="field">
+          <span>每周可投入时间</span>
           <div class="range-row">
             <input v-model.number="weeklyHours" type="range" min="4" max="30" />
-            <strong>{{ weeklyHours }} 小时</strong>
+            <strong class="num">{{ weeklyHours }} 小时</strong>
           </div>
         </label>
-        <label>
-          目标周期
-          <select v-model.number="durationWeeks">
-            <option :value="12">12 周 · 冲刺</option>
-            <option :value="16">16 周 · 标准</option>
-            <option :value="24">24 周 · 稳健</option>
-          </select>
-        </label>
+
+        <div class="field">
+          <span>目标周期</span>
+          <div class="duration-options">
+            <button
+              v-for="opt in [{ v: 12, t: '冲刺' }, { v: 16, t: '标准' }, { v: 24, t: '稳健' }]"
+              :key="opt.v"
+              type="button"
+              class="duration"
+              :class="{ 'duration--on': durationWeeks === opt.v }"
+              @click="durationWeeks = opt.v"
+            >
+              <strong class="num">{{ opt.v }} 周</strong>
+              <small>{{ opt.t }}</small>
+            </button>
+          </div>
+        </div>
+
         <div class="form-actions">
-          <button class="btn btn--ghost" @click="step = 1">返回</button>
+          <button class="btn btn--ghost" @click="step = 1"><Icon name="arrowLeft" :size="15" /> 返回</button>
           <button class="btn btn--primary" :disabled="decomposing" @click="confirmGoal">
-            {{ decomposing ? 'AI 分解中…' : '生成学习路径' }}
+            <Icon name="sparkles" :size="15" /> {{ decomposing ? 'AI 分解中…' : '生成学习路径' }}
           </button>
         </div>
       </div>
-      <div class="commitment card">
-        <span class="tag">目标承诺书</span>
+
+      <div class="commitment card card--gradient">
+        <span class="tag tag--glass">目标承诺书</span>
         <h2>{{ durationWeeks }} 周成为初级前端工程师</h2>
         <p>我将每周投入 <strong>{{ weeklyHours }} 小时</strong>，通过微单元、快测和项目里程碑持续验证能力。</p>
         <ul>
-          <li>难度评估：中等</li>
-          <li>建议节奏：每日 25–40 分钟</li>
-          <li>预计微单元：8 个 MVP 单元</li>
-          <li>验收标准：目标达成度 ≥ 75%</li>
+          <li><Icon name="check" :size="14" :stroke="3" /> 难度评估：中等</li>
+          <li><Icon name="check" :size="14" :stroke="3" /> 建议节奏：每日 25–40 分钟</li>
+          <li><Icon name="check" :size="14" :stroke="3" /> 预计微单元：8 个 MVP 单元</li>
+          <li><Icon name="check" :size="14" :stroke="3" /> 验收标准：目标达成度 ≥ 75%</li>
         </ul>
       </div>
     </section>
 
+    <!-- 第三步：分解结果 -->
     <section v-else class="path-panel card fade-up">
       <div class="path-head">
         <div>
-          <span class="tag">AI 已完成目标分解</span>
+          <span class="tag tag--ai"><Icon name="sparkles" :size="12" /> AI 已完成目标分解</span>
           <h2>{{ decomposeResult?.goalName || growth.goal?.name || frontendPath.name }}</h2>
           <p v-if="decomposeResult?.aiSummary">{{ decomposeResult.aiSummary }}</p>
           <p v-else>4 个能力域 · 8 个知识点 · 4 个里程碑</p>
         </div>
-        <button class="btn btn--primary" @click="router.push('/')">进入学习驾驶舱</button>
+        <button class="btn btn--primary" @click="router.push('/')">进入学习驾驶舱 <Icon name="arrowRight" :size="15" /></button>
       </div>
 
       <div v-if="decomposeResult?.stages?.length" class="ai-stages">
         <article v-for="stage in decomposeResult.stages" :key="stage.name" class="ai-stage">
-          <strong>{{ stage.name }}</strong>
-          <span>{{ stage.durationWeeks }} 周</span>
+          <div class="ai-stage__head">
+            <strong>{{ stage.name }}</strong>
+            <span class="tag tag--neutral">{{ stage.durationWeeks }} 周</span>
+          </div>
           <ul>
             <li v-for="topic in stage.topics" :key="topic">{{ topic }}</li>
           </ul>
@@ -237,23 +270,25 @@ async function confirmGoal() {
 
       <div class="domain-list">
         <article v-for="(domain, index) in frontendPath.competencies" :key="domain.id" class="domain">
-          <div class="domain__number">{{ index + 1 }}</div>
+          <div class="domain__number" :style="{ background: domain.color }">{{ index + 1 }}</div>
           <div class="domain__body">
             <div class="domain__title">
               <strong>{{ domain.name }}</strong>
-              <span>权重 {{ domain.weight }}%</span>
+              <span class="tag tag--neutral">权重 {{ domain.weight }}%</span>
             </div>
-            <div class="point-list">
-              <span v-for="point in domain.points" :key="point.id">● {{ point.name }}</span>
-            </div>
+            <ul class="point-list">
+              <li v-for="point in domain.points" :key="point.id"><Icon name="check" :size="12" :stroke="3" /> {{ point.name }}</li>
+            </ul>
           </div>
         </article>
       </div>
+
       <div class="milestones">
-        <div v-for="milestone in frontendPath.milestones" :key="milestone.id">
-          <strong>第 {{ milestone.week }} 周</strong>
-          <span>{{ milestone.name }}</span>
+        <div v-for="(milestone, index) in frontendPath.milestones" :key="milestone.id" class="milestone">
+          <span class="milestone__week">第 {{ milestone.week }} 周</span>
+          <strong>{{ milestone.name }}</strong>
           <small>{{ milestone.standard }}</small>
+          <i class="milestone__dot" :style="{ animationDelay: index * 0.1 + 's' }"></i>
         </div>
       </div>
     </section>
@@ -261,73 +296,156 @@ async function confirmGoal() {
 </template>
 
 <style scoped>
-.career-page { max-width: 1120px; }
-.eyebrow { color: var(--primary); font-size: 13px; font-weight: 700; letter-spacing: .08em; }
-.steps { display: flex; gap: 8px; margin: 24px 0; }
-.step { flex: 1; display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #e9edf4; color: var(--text-3); font-size: 13px; }
-.step span { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #cbd5e1; color: white; font-weight: 700; }
-.step.active { background: var(--primary-soft); color: var(--primary-strong); }
-.step.active span { background: var(--primary); }
-.ai-tip { display: flex; gap: 14px; padding: 18px 20px; margin-bottom: 18px; background: linear-gradient(100deg, #eef2ff, #faf5ff); }
-.ai-tip__icon { font-size: 25px; }
-.ai-tip p { margin: 3px 0 0; color: var(--text-2); font-size: 13px; }
-.interview-toggle { margin-top: 10px; }
-.interview { padding: 16px; margin-bottom: 18px; }
-.interview__messages { max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
-.interview__hint { color: var(--text-3); font-size: 13px; }
-.interview__msg { margin: 10px 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; line-height: 1.6; }
-.interview__msg--user { background: var(--primary-soft); margin-left: 20%; }
-.interview__msg--assistant { background: var(--surface-2); margin-right: 10%; }
-.interview__composer { display: flex; gap: 8px; }
-.interview__composer input { flex: 1; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font: inherit; }
+.career-page { max-width: 1160px; }
+
+/* 步骤条 */
+.steps { display: flex; gap: 10px; margin: 0 0 28px; padding: 0; list-style: none; }
+.step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all var(--t);
+}
+.step__index { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface-3); color: var(--text-3); font-size: 12px; font-weight: 800; }
+.step--active { border-color: var(--primary); color: var(--primary-strong); box-shadow: 0 0 0 4px var(--primary-soft); }
+.step--active .step__index { background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; }
+.step--done { color: var(--text-2); }
+.step--done .step__index { background: var(--success); color: #fff; }
+
+/* AI 提示 */
+.ai-tip {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  margin-bottom: 18px;
+  background: linear-gradient(110deg, #f3f0ff, #fff 60%, #f0fdf8);
+}
+.ai-tip__icon { display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 46px; border-radius: 14px; background: linear-gradient(135deg, var(--primary), #a071ff); color: #fff; box-shadow: var(--shadow-primary); }
+.ai-tip__body { flex: 1; }
+.ai-tip__body strong { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.ai-tip p { margin: 4px 0 0; color: var(--text-2); font-size: 13.5px; }
+
+.interview { padding: 18px; margin-bottom: 18px; }
+.interview__messages { max-height: 320px; overflow-y: auto; margin-bottom: 14px; }
+.interview__hint { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; border-radius: 12px; background: var(--primary-soft); color: var(--primary-strong); font-size: 13.5px; }
+.interview__msg { margin: 10px 0; padding: 11px 14px; border-radius: 14px; font-size: 14px; line-height: 1.65; }
+.interview__msg--user { margin-left: 22%; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; border-bottom-right-radius: 4px; }
+.interview__msg--assistant { margin-right: 12%; background: var(--surface-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.interview__composer { display: flex; gap: 10px; }
+.interview__composer .input { flex: 1; }
+
+/* 职业卡片 */
 .career-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.career-card { text-align: left; padding: 22px; cursor: pointer; font: inherit; color: inherit; transition: .2s; }
-.career-card:hover, .career-card.selected { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 10px 30px rgba(99, 102, 241, .12); }
-.career-card__top, .career-meta, .domain__title, .path-head { display: flex; justify-content: space-between; align-items: center; }
-.career-icon { font-size: 28px; }
-.match { color: var(--success); background: var(--success-soft); border-radius: 99px; padding: 3px 9px; font-size: 12px; font-weight: 700; }
-.career-card small { color: var(--text-3); }
-.career-card h2 { margin: 5px 0 8px; font-size: 19px; }
-.career-card p { min-height: 52px; color: var(--text-2); font-size: 13px; }
-.career-meta { font-size: 11px; color: var(--text-2); }
-.selection-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 20px; color: var(--warning); font-size: 13px; }
-.goal-layout { display: grid; grid-template-columns: 1.1fr .9fr; gap: 20px; }
-.goal-form, .commitment { padding: 26px; }
-.goal-form h2, .commitment h2 { margin-top: 0; }
-.goal-form label { display: block; margin: 18px 0; color: var(--text-2); font-size: 13px; font-weight: 600; }
-select { width: 100%; margin-top: 7px; padding: 11px; border: 1px solid var(--border); border-radius: 9px; background: white; font: inherit; }
-.range-row { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+.career-card { position: relative; display: flex; flex-direction: column; text-align: left; padding: 24px; cursor: pointer; font: inherit; color: inherit; }
+.career-card--selected { border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft), var(--shadow); }
+.career-card__top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.career-card__icon { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 15px; background: var(--surface-3); font-size: 26px; }
+.career-card__category { color: var(--text-3); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; }
+.career-card h2 { margin: 4px 0 8px; font-size: 19px; }
+.career-card p { flex: 1; margin: 0 0 14px; color: var(--text-2); font-size: 13.5px; line-height: 1.65; }
+.career-meta { display: flex; flex-wrap: wrap; gap: 10px; color: var(--text-2); font-size: 12px; }
+.career-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.career-card__check {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: all var(--t);
+}
+.career-card--selected .career-card__check { opacity: 1; transform: scale(1); }
+.career-card--selected .career-card__top .tag { visibility: hidden; }
+
+.selection-actions { display: flex; justify-content: flex-end; align-items: center; gap: 16px; margin-top: 24px; }
+.selection-note { display: inline-flex; align-items: center; gap: 6px; color: var(--warning-strong); font-size: 13px; }
+
+/* 目标条件 */
+.goal-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px; }
+.goal-form { padding: 30px; display: flex; flex-direction: column; gap: 20px; }
+.goal-form h2 { margin: 0; font-size: 21px; }
+.goal-form__desc { margin: -12px 0 0; color: var(--text-2); font-size: 13.5px; }
+.range-row { display: flex; align-items: center; gap: 16px; }
 .range-row input { flex: 1; }
-.range-row strong { min-width: 60px; color: var(--primary); }
-.form-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.commitment { background: linear-gradient(145deg, #312e81, #6366f1); color: white; }
-.commitment .tag { background: rgba(255,255,255,.16); color: white; }
-.commitment p { color: #e0e7ff; }
-.commitment li { margin: 10px 0; }
-.path-panel { padding: 28px; }
-.path-head { margin-bottom: 24px; }
-.path-head h2 { margin: 8px 0 2px; }
+.range-row strong { min-width: 64px; color: var(--primary-strong); font-size: 16px; text-align: right; }
+.duration-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.duration {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-2);
+  font: inherit;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+.duration strong { font-size: 15px; color: var(--text); }
+.duration small { font-size: 12px; }
+.duration:hover { border-color: var(--primary); }
+.duration--on { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px var(--primary-soft); }
+.duration--on strong, .duration--on small { color: var(--primary-strong); }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+
+.commitment { padding: 30px; }
+.commitment h2 { margin: 16px 0 8px; font-size: 22px; }
+.commitment p { margin: 0 0 18px; color: rgba(255, 255, 255, 0.82); font-size: 14.5px; }
+.commitment ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.commitment li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: rgba(255, 255, 255, 0.12); font-size: 14px; }
+.commitment li .icon { color: #6ee7b7; }
+
+/* 分解结果 */
+.path-panel { padding: 32px; }
+.path-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 26px; }
+.path-head h2 { margin: 12px 0 4px; font-size: 24px; }
 .path-head p { margin: 0; color: var(--text-2); }
 .ai-stages { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-.ai-stage { padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
-.ai-stage span { color: var(--text-3); font-size: 12px; }
-.ai-stage ul { margin: 8px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13px; }
-.domain-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.domain { display: flex; gap: 14px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; }
-.domain__number { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+.ai-stage { padding: 16px 18px; border: 1px solid var(--primary-soft-2); border-radius: 14px; background: linear-gradient(140deg, #f6f3ff, #fff); }
+.ai-stage__head { display: flex; justify-content: space-between; align-items: center; }
+.ai-stage ul { margin: 10px 0 0; padding-left: 18px; color: var(--text-2); font-size: 13.5px; }
+.domain-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.domain { display: flex; gap: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
+.domain__number { display: grid; place-items: center; width: 38px; height: 38px; flex: 0 0 38px; border-radius: 12px; color: #fff; font-family: 'Sora', sans-serif; font-weight: 800; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3); }
 .domain__body { flex: 1; }
-.domain__title span { color: var(--text-3); font-size: 12px; }
-.point-list { display: flex; flex-direction: column; margin-top: 8px; color: var(--text-2); font-size: 13px; }
-.point-list span::first-letter { color: var(--success); }
-.milestones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; margin-top: 22px; }
-.milestones div { display: flex; flex-direction: column; padding: 14px; border-top: 3px solid var(--primary); background: var(--surface-2); }
-.milestones span { font-size: 13px; font-weight: 600; }
-.milestones small { color: var(--text-3); }
-@media (max-width: 800px) {
+.domain__title { display: flex; justify-content: space-between; align-items: center; }
+.domain__title strong { font-size: 15px; }
+.point-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; color: var(--text-2); font-size: 13.5px; }
+.point-list li { display: flex; align-items: center; gap: 6px; }
+.point-list .icon { color: var(--success); }
+.milestones { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 24px; position: relative; }
+.milestones::before { content: ''; position: absolute; top: 0; left: 4%; right: 4%; height: 2px; background: linear-gradient(90deg, var(--primary-soft-2), var(--primary), var(--primary-soft-2)); }
+.milestone { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 22px 16px 16px; border-radius: 14px; background: var(--surface-2); }
+.milestone__week { color: var(--primary); font-size: 12px; font-weight: 700; }
+.milestone strong { font-size: 14px; }
+.milestone small { color: var(--text-3); font-size: 12px; }
+.milestone__dot { position: absolute; top: -6px; left: 50%; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 4px var(--surface); }
+
+@media (max-width: 900px) {
   .career-grid, .goal-layout, .domain-list, .ai-stages { grid-template-columns: 1fr; }
   .milestones { grid-template-columns: 1fr 1fr; }
+  .milestones::before { display: none; }
   .steps { overflow-x: auto; }
   .step { min-width: 130px; }
-  .path-head { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .path-head { flex-direction: column; }
+  .ai-tip { flex-wrap: wrap; }
+  .selection-actions { flex-direction: column; align-items: stretch; }
 }
 </style>

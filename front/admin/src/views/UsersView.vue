@@ -1,66 +1,85 @@
 <template>
-  <div>
-    <div class="page-header">
-      <h2>用户管理</h2>
+  <div class="page">
+    <PageHeader eyebrow="用户管理" title="用户管理" subtitle="管理学员与后台账号，分配角色并控制启用状态。">
       <el-button v-permission="PERM.USER_CREATE" type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
-    </div>
+    </PageHeader>
 
-    <el-card shadow="never">
-      <div style="display: flex; gap: 12px; margin-bottom: 16px">
-        <el-input v-model="filters.keyword" placeholder="搜索用户名/昵称" clearable style="width: 220px" @clear="loadData" @keyup.enter="loadData" />
-        <el-select v-model="filters.role" placeholder="角色" clearable style="width: 140px" @change="loadData">
-          <el-option label="学员" value="learner" />
-          <el-option label="管理员" value="admin" />
-          <el-option label="审核员" value="reviewer" />
-          <el-option label="运营" value="operator" />
-        </el-select>
-        <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px" @change="loadData">
-          <el-option label="正常" value="active" />
-          <el-option label="禁用" value="disabled" />
-        </el-select>
-        <el-button type="primary" @click="loadData">查询</el-button>
+    <div class="panel">
+      <div class="panel__head">
+        <div class="toolbar">
+          <el-input v-model="filters.keyword" placeholder="搜索用户名 / 昵称" clearable :prefix-icon="Search" style="width: 240px" @clear="loadData" @keyup.enter="loadData" />
+          <el-select v-model="filters.role" placeholder="全部角色" clearable style="width: 140px" @change="loadData">
+            <el-option label="学员" value="learner" />
+            <el-option label="管理员" value="admin" />
+            <el-option label="审核员" value="reviewer" />
+            <el-option label="运营" value="operator" />
+          </el-select>
+          <el-select v-model="filters.status" placeholder="全部状态" clearable style="width: 130px" @change="loadData">
+            <el-option label="正常" value="active" />
+            <el-option label="禁用" value="disabled" />
+          </el-select>
+          <el-button @click="loadData">查询</el-button>
+        </div>
+        <span class="muted">共 {{ total }} 位用户</span>
       </div>
 
-      <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="username" label="用户名" width="140" />
-        <el-table-column prop="nickname" label="昵称" width="140" />
-        <el-table-column label="角色" width="100">
-          <template #default="{ row }">
-            <el-tag :type="roleTagType(row.role)" size="small">{{ roleLabel(row.role) }}</el-tag>
+      <div class="panel__body panel__body--flush">
+        <el-table :data="list" v-loading="loading">
+          <el-table-column label="用户" min-width="240">
+            <template #default="{ row }">
+              <div class="cell">
+                <span class="avatar" :style="{ background: row.avatarColor || avatarColor(row.username) }">
+                  {{ row.avatar || row.nickname?.slice(0, 1) || row.username?.slice(0, 1) }}
+                </span>
+                <div class="cell__main">
+                  <div class="cell__title">{{ row.nickname || row.username }}</div>
+                  <div class="cell__sub mono">@{{ row.username }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="角色" width="120">
+            <template #default="{ row }">
+              <el-tag :type="roleTagType(row.role)" size="small">{{ roleLabel(row.role) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <span class="status" :class="row.status === 'active' ? 'status--on' : 'status--off'">
+                <i />{{ row.status === 'active' ? '正常' : '禁用' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="注册时间" min-width="180">
+            <template #default="{ row }"><span class="muted">{{ formatDate(row.joinedAt) }}</span></template>
+          </el-table-column>
+          <el-table-column label="操作" width="150" fixed="right" align="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
+              <el-popconfirm v-if="auth.hasPermission(PERM.USER_DELETE)" title="确定删除该用户？" @confirm="handleDelete(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="没有符合条件的用户" :image-size="90" />
           </template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'active' ? '正常' : '禁用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="注册时间">
-          <template #default="{ row }">{{ formatDate(row.joinedAt) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-popconfirm v-if="auth.hasPermission(PERM.USER_DELETE)" title="确定删除该用户？" @confirm="handleDelete(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+        </el-table>
+      </div>
 
-      <el-pagination
-        v-if="total > pageSize"
-        style="margin-top: 16px; justify-content: flex-end"
-        layout="total, prev, pager, next"
-        :total="total"
-        :page-size="pageSize"
-        v-model:current-page="page"
-        @current-change="loadData"
-      />
-    </el-card>
+      <div v-if="total > pageSize" class="panel__foot pager">
+        <el-pagination
+          background
+          layout="total, prev, pager, next"
+          :total="total"
+          :page-size="pageSize"
+          v-model:current-page="page"
+          @current-change="loadData"
+        />
+      </div>
+    </div>
 
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑用户' : '新增用户'" width="480px">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
@@ -98,11 +117,19 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { usersApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 import { PERM } from '../constants/permissions'
+import PageHeader from '../components/common/PageHeader.vue'
+
+const AVATAR_COLORS = ['#6b5cff', '#0fb981', '#f59e0b', '#2a8cf4', '#f0589a', '#0ea5e9']
+function avatarColor(seed = '') {
+  let h = 0
+  for (const ch of seed) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return AVATAR_COLORS[h % AVATAR_COLORS.length]
+}
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -187,3 +214,42 @@ async function handleDelete(id) {
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status--on { color: var(--success-strong); }
+.status--on i { background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); }
+.status--off { color: var(--danger-strong); }
+.status--off i { background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+}
+</style>

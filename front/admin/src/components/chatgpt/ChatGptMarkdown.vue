@@ -55,9 +55,9 @@ onMounted(bindCopyButtons)
 
 <style scoped>
 .cgpt-md {
-  font-size: 16px;
-  line-height: 1.65;
-  color: #0d0d0d;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--text);
   word-break: break-word;
 }
 
@@ -89,18 +89,23 @@ onMounted(bindCopyButtons)
 .cgpt-md :deep(blockquote) {
   margin: 12px 0;
   padding-left: 12px;
-  border-left: 3px solid #d1d5db;
-  color: #4b5563;
+  border-left: 3px solid var(--primary);
+  color: var(--text-2);
+  background: var(--primary-soft);
+  padding: 8px 12px;
+  border-radius: 0 10px 10px 0;
 }
 
 .cgpt-md :deep(a) {
-  color: #10a37f;
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .cgpt-md :deep(code) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.9em;
-  background: #f4f4f4;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.88em;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
   padding: 2px 6px;
   border-radius: 6px;
 }
@@ -108,9 +113,9 @@ onMounted(bindCopyButtons)
 .cgpt-md :deep(pre) {
   margin: 12px 0;
   padding: 16px;
-  background: #0d0d0d;
-  color: #f5f5f5;
-  border-radius: 12px;
+  background: var(--ink);
+  color: #e2e4f5;
+  border-radius: 14px;
   overflow-x: auto;
   font-size: 14px;
   line-height: 1.5;
@@ -145,7 +150,7 @@ onMounted(bindCopyButtons)
   height: 18px;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background: #0d0d0d;
+  background: var(--primary);
   animation: cgpt-cursor 1s step-end infinite;
 }
 

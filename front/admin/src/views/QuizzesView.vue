@@ -1,34 +1,67 @@
 <template>
-  <div>
-    <div class="page-header">
-      <h2>题库管理</h2>
+  <div class="page">
+    <PageHeader eyebrow="内容管理" title="题库管理" subtitle="为课程创建测验、维护题目与发布状态。">
       <el-button type="primary" :icon="Plus" @click="openDialog()">新增测验</el-button>
+    </PageHeader>
+
+    <div class="stat-grid stat-grid--3">
+      <StatCard label="测验套数" :value="list.length" icon="EditPen" tone="primary" />
+      <StatCard label="题目总数" :value="questionTotal" icon="Tickets" tone="sky" />
+      <StatCard label="已发布" :value="publishedCount" icon="Promotion" tone="success" />
     </div>
 
-    <el-card shadow="never">
-      <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="title" label="测验名称" min-width="200" />
-        <el-table-column prop="courseId" label="关联课程" width="180" />
-        <el-table-column prop="questionCount" label="题目数" width="80" />
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small">
-              {{ row.status === 'published' ? '已发布' : '草稿' }}
-            </el-tag>
+    <div class="panel">
+      <div class="panel__head">
+        <h3 class="panel__title">
+          <span class="panel__title-icon"><el-icon><EditPen /></el-icon></span>
+          全部测验
+        </h3>
+        <span class="muted">共 {{ list.length }} 套</span>
+      </div>
+      <div class="panel__body panel__body--flush">
+        <el-table :data="list" v-loading="loading">
+          <el-table-column label="测验" min-width="260">
+            <template #default="{ row }">
+              <div class="cell">
+                <span class="cell__icon quiz-icon"><el-icon :size="18"><EditPen /></el-icon></span>
+                <div class="cell__main">
+                  <div class="cell__title">{{ row.title }}</div>
+                  <div class="cell__sub mono">{{ row.id }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="关联课程" min-width="180">
+            <template #default="{ row }">
+              <span class="course-chip">{{ courseTitle(row.courseId) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="题目数" width="100">
+            <template #default="{ row }"><span class="num">{{ row.questionCount }}</span></template>
+          </el-table-column>
+          <el-table-column label="状态" width="100">
+            <template #default="{ row }">
+              <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small">
+                {{ row.status === 'published' ? '已发布' : '草稿' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="170" fixed="right" align="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="$router.push(`/quizzes/${row.id}`)">编辑题目</el-button>
+              <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="暂无测验，点击右上角新增" :image-size="90" />
           </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="$router.push(`/quizzes/${row.id}`)">编辑题目</el-button>
-            <el-popconfirm title="确定删除？" @confirm="handleDelete(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+        </el-table>
+      </div>
+    </div>
 
     <el-dialog v-model="dialogVisible" title="新增测验" width="480px">
       <el-form :model="form" label-width="100px">
@@ -56,17 +89,25 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, EditPen } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { quizzesApi, coursesApi } from '../api'
+import PageHeader from '../components/common/PageHeader.vue'
+import StatCard from '../components/common/StatCard.vue'
 
 const router = useRouter()
 const loading = ref(false)
 const saving = ref(false)
 const list = ref([])
 const courses = ref([])
+
+const questionTotal = computed(() => list.value.reduce((sum, q) => sum + (q.questionCount || 0), 0))
+const publishedCount = computed(() => list.value.filter((q) => q.status === 'published').length)
+function courseTitle(id) {
+  return courses.value.find((c) => c.id === id)?.title || id || '—'
+}
 const dialogVisible = ref(false)
 const form = reactive({ id: '', title: '', courseId: '', description: '' })
 
@@ -110,3 +151,31 @@ async function handleDelete(id) {
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.stat-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quiz-icon {
+  background: var(--sky-soft);
+  color: var(--sky);
+}
+
+.course-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--surface-3);
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .stat-grid--3 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

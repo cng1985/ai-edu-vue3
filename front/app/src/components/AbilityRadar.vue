@@ -72,11 +72,11 @@ function labelPosition(index) {
 
 <style scoped>
 .radar { display: block; max-width: 100%; margin: auto; overflow: visible; }
-.radar__grid, .radar__axis { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1; }
+.radar__grid, .radar__axis { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1; }
 .radar__axis { fill: none; }
-.radar__target { fill: rgba(99, 102, 241, .04); stroke: #a5b4fc; stroke-width: 1.5; stroke-dasharray: 4 4; }
-.radar__value { fill: rgba(99, 102, 241, .22); stroke: var(--primary); stroke-width: 2.5; }
-.radar__dot { fill: var(--primary); stroke: white; stroke-width: 2; }
-.radar__label { fill: var(--text-2); font-size: 11px; font-weight: 600; }
-.radar__score { fill: var(--primary); font-size: 10px; font-weight: 700; }
+.radar__target { fill: rgba(107, 92, 255, .04); stroke: #b3a8ff; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.radar__value { fill: rgba(107, 92, 255, .22); stroke: var(--primary); stroke-width: 2.5; stroke-linejoin: round; }
+.radar__dot { fill: var(--primary); stroke: white; stroke-width: 2.5; }
+.radar__label { fill: var(--text-2); font-size: 11.5px; font-weight: 600; }
+.radar__score { fill: var(--primary-strong); font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; }
 </style>

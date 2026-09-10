@@ -1,68 +1,87 @@
 <template>
-  <div>
-    <div class="page-header">
-      <h2>单据管理</h2>
-      <div style="display: flex; gap: 8px">
-        <el-button v-permission="PERM.DOCUMENT_EXPORT" :icon="Download" @click="handleExport">导出 Excel</el-button>
-        <el-button v-permission="PERM.DOCUMENT_IMPORT" :icon="Upload" @click="openImportDialog">导入 Excel</el-button>
-        <el-button v-permission="PERM.DOCUMENT_WRITE" type="primary" :icon="Plus" @click="openDialog()">新增单据</el-button>
+  <div class="page">
+    <PageHeader eyebrow="单据管理" title="单据管理" subtitle="录入与审批采购、销售、报销等业务单据，支持 Excel 批量导入导出。">
+      <el-button v-permission="PERM.DOCUMENT_EXPORT" :icon="Download" @click="handleExport">导出 Excel</el-button>
+      <el-button v-permission="PERM.DOCUMENT_IMPORT" :icon="Upload" @click="openImportDialog">导入 Excel</el-button>
+      <el-button v-permission="PERM.DOCUMENT_WRITE" type="primary" :icon="Plus" @click="openDialog()">新增单据</el-button>
+    </PageHeader>
+
+    <div class="panel">
+      <div class="panel__head">
+        <div class="toolbar">
+          <el-input v-model="filters.keyword" placeholder="搜索编号 / 标题" clearable :prefix-icon="Search" style="width: 240px" @clear="loadData" @keyup.enter="loadData" />
+          <el-select v-model="filters.type" placeholder="全部类型" clearable style="width: 140px" @change="loadData">
+            <el-option v-for="t in typeOptions" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
+          <el-select v-model="filters.status" placeholder="全部状态" clearable style="width: 130px" @change="loadData">
+            <el-option v-for="s in statusOptions" :key="s.value" :label="s.label" :value="s.value" />
+          </el-select>
+          <el-button @click="loadData">查询</el-button>
+        </div>
+        <span class="muted">共 {{ total }} 张单据</span>
+      </div>
+
+      <div class="panel__body panel__body--flush">
+        <el-table :data="list" v-loading="loading">
+          <el-table-column label="单据" min-width="260">
+            <template #default="{ row }">
+              <div class="cell">
+                <span class="cell__icon" :class="`type-icon--${row.type}`">
+                  <el-icon :size="18"><component :is="typeIcon(row.type)" /></el-icon>
+                </span>
+                <div class="cell__main">
+                  <div class="cell__title">{{ row.title }}</div>
+                  <div class="cell__sub mono">{{ row.docNo }}</div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="类型" width="110">
+            <template #default="{ row }">
+              <el-tag size="small" type="info" effect="plain">{{ typeLabel(row.type) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="金额" width="140" align="right">
+            <template #default="{ row }">
+              <span class="amount num">¥{{ row.amount.toFixed(2) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="110">
+            <template #default="{ row }">
+              <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdBy" label="创建人" width="110" />
+          <el-table-column label="创建时间" width="180">
+            <template #default="{ row }"><span class="muted">{{ formatDate(row.createdAt) }}</span></template>
+          </el-table-column>
+          <el-table-column label="操作" width="150" fixed="right" align="right">
+            <template #default="{ row }">
+              <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
+              <el-popconfirm v-if="auth.hasPermission(PERM.DOCUMENT_DELETE)" title="确定删除该单据？" @confirm="handleDelete(row.id)">
+                <template #reference>
+                  <el-button link type="danger">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+          <template #empty>
+            <el-empty description="没有符合条件的单据" :image-size="90" />
+          </template>
+        </el-table>
+      </div>
+
+      <div v-if="total > pageSize" class="panel__foot pager">
+        <el-pagination
+          background
+          layout="total, prev, pager, next"
+          :total="total"
+          :page-size="pageSize"
+          v-model:current-page="page"
+          @current-change="loadData"
+        />
       </div>
     </div>
-
-    <el-card shadow="never">
-      <div style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap">
-        <el-input v-model="filters.keyword" placeholder="搜索编号/标题" clearable style="width: 220px" @clear="loadData" @keyup.enter="loadData" />
-        <el-select v-model="filters.type" placeholder="类型" clearable style="width: 140px" @change="loadData">
-          <el-option v-for="t in typeOptions" :key="t.value" :label="t.label" :value="t.value" />
-        </el-select>
-        <el-select v-model="filters.status" placeholder="状态" clearable style="width: 120px" @change="loadData">
-          <el-option v-for="s in statusOptions" :key="s.value" :label="s.label" :value="s.value" />
-        </el-select>
-        <el-button type="primary" @click="loadData">查询</el-button>
-      </div>
-
-      <el-table :data="list" v-loading="loading" stripe>
-        <el-table-column prop="docNo" label="单据编号" width="160" />
-        <el-table-column prop="title" label="标题" min-width="180" show-overflow-tooltip />
-        <el-table-column label="类型" width="100">
-          <template #default="{ row }">
-            <el-tag size="small">{{ typeLabel(row.type) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="金额" width="120" align="right">
-          <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="statusTagType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdBy" label="创建人" width="100" />
-        <el-table-column label="创建时间" width="170">
-          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="openDialog(row)">编辑</el-button>
-            <el-popconfirm v-if="auth.hasPermission(PERM.DOCUMENT_DELETE)" title="确定删除该单据？" @confirm="handleDelete(row.id)">
-              <template #reference>
-                <el-button link type="danger">删除</el-button>
-              </template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <el-pagination
-        v-if="total > pageSize"
-        style="margin-top: 16px; justify-content: flex-end"
-        layout="total, prev, pager, next"
-        :total="total"
-        :page-size="pageSize"
-        v-model:current-page="page"
-        @current-change="loadData"
-      />
-    </el-card>
 
     <!-- 新增/编辑对话框 -->
     <el-dialog v-model="dialogVisible" :title="editing ? '编辑单据' : '新增单据'" width="520px">
@@ -99,11 +118,14 @@
     <!-- 导入对话框 -->
     <el-dialog v-model="importVisible" title="导入 Excel" width="520px" :close-on-click-modal="!importing" :close-on-press-escape="!importing" :show-close="!importing">
       <div v-if="!importing && !importDone">
-        <el-alert type="info" :closable="false" style="margin-bottom: 16px">
-          请上传 .xlsx 格式的 Excel 文件。可先
-          <el-link type="primary" @click="downloadTemplate">下载导入模板</el-link>
-          查看格式要求。
-        </el-alert>
+        <div class="hint hint--info" style="margin-bottom: 16px">
+          <el-icon :size="16" style="margin-top: 2px"><InfoFilled /></el-icon>
+          <span>
+            请上传 .xlsx 格式的 Excel 文件。可先
+            <el-link type="primary" @click="downloadTemplate">下载导入模板</el-link>
+            查看格式要求。
+          </span>
+        </div>
         <el-upload
           ref="uploadRef"
           drag
@@ -113,42 +135,49 @@
           :on-change="onFileChange"
           :on-exceed="() => ElMessage.warning('只能上传一个文件')"
         >
-          <el-icon :size="48" style="color: #c0c4cc"><Upload /></el-icon>
-          <div>将文件拖到此处，或<em>点击上传</em></div>
+          <div class="upload-icon"><el-icon :size="26"><Upload /></el-icon></div>
+          <div class="upload-text">将文件拖到此处，或 <em>点击上传</em></div>
           <template #tip>
-            <div style="color: #909399; font-size: 12px">仅支持 .xlsx / .xls 格式</div>
+            <div class="upload-tip">仅支持 .xlsx / .xls 格式</div>
           </template>
         </el-upload>
       </div>
 
       <div v-if="importing || importDone">
-        <div style="margin-bottom: 16px; text-align: center">
+        <div class="import-progress">
           <el-progress
             :percentage="importProgress"
             :status="importDone ? (importResult?.failed > 0 ? 'warning' : 'success') : undefined"
-            :stroke-width="18"
+            :stroke-width="14"
             striped
             striped-flow
           />
         </div>
-        <el-descriptions :column="2" border size="small">
-          <el-descriptions-item label="总行数">{{ importResult?.total || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="已处理">{{ importResult?.current || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="成功">
-            <span style="color: #67c23a">{{ importResult?.success || 0 }}</span>
-          </el-descriptions-item>
-          <el-descriptions-item label="失败">
-            <span style="color: #f56c6c">{{ importResult?.failed || 0 }}</span>
-          </el-descriptions-item>
-        </el-descriptions>
-        <div v-if="importResult?.errors?.length" style="margin-top: 12px">
-          <el-alert type="error" :closable="false" title="错误详情">
-            <div style="max-height: 120px; overflow-y: auto; font-size: 12px">
-              <div v-for="(err, i) in importResult.errors" :key="i">{{ err }}</div>
-            </div>
-          </el-alert>
+        <div class="import-stats">
+          <div class="import-stat">
+            <span class="import-stat__label">总行数</span>
+            <strong class="num">{{ importResult?.total || 0 }}</strong>
+          </div>
+          <div class="import-stat">
+            <span class="import-stat__label">已处理</span>
+            <strong class="num">{{ importResult?.current || 0 }}</strong>
+          </div>
+          <div class="import-stat import-stat--success">
+            <span class="import-stat__label">成功</span>
+            <strong class="num">{{ importResult?.success || 0 }}</strong>
+          </div>
+          <div class="import-stat import-stat--danger">
+            <span class="import-stat__label">失败</span>
+            <strong class="num">{{ importResult?.failed || 0 }}</strong>
+          </div>
         </div>
-        <div v-if="importDone && importResult?.message" style="margin-top: 12px; text-align: center; color: #606266">
+        <div v-if="importResult?.errors?.length" class="import-errors">
+          <div class="import-errors__title">错误详情</div>
+          <div class="import-errors__list">
+            <div v-for="(err, i) in importResult.errors" :key="i">{{ err }}</div>
+          </div>
+        </div>
+        <div v-if="importDone && importResult?.message" class="import-message">
           {{ importResult.message }}
         </div>
       </div>
@@ -163,11 +192,16 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
-import { Plus, Upload, Download } from '@element-plus/icons-vue'
+import { Plus, Upload, Download, Search, InfoFilled, ShoppingCart, Sell, Wallet, Tickets } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { documentsApi } from '../api'
 import { useAuthStore } from '../stores/auth'
 import { PERM } from '../constants/permissions'
+import PageHeader from '../components/common/PageHeader.vue'
+
+function typeIcon(type) {
+  return { purchase: ShoppingCart, sales: Sell, expense: Wallet }[type] || Tickets
+}
 
 const auth = useAuthStore()
 const loading = ref(false)
@@ -338,3 +372,112 @@ async function startImport() {
 onMounted(loadData)
 onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
+
+<style scoped>
+.type-icon--purchase { background: var(--primary-soft); color: var(--primary); }
+.type-icon--sales { background: var(--success-soft); color: var(--success); }
+.type-icon--expense { background: var(--warning-soft); color: var(--warning-strong); }
+.type-icon--other { background: var(--surface-3); color: var(--text-3); }
+
+.amount {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pager {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.upload-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  margin-bottom: 12px;
+}
+
+.upload-text {
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.upload-text em {
+  color: var(--primary);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.upload-tip {
+  margin-top: 8px;
+  color: var(--text-3);
+  font-size: 12px;
+  text-align: center;
+}
+
+.import-progress {
+  margin-bottom: 18px;
+}
+
+.import-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.import-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.import-stat__label {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.import-stat strong {
+  font-size: 20px;
+  color: var(--text);
+}
+
+.import-stat--success { background: var(--success-soft); }
+.import-stat--success strong { color: var(--success-strong); }
+.import-stat--danger { background: var(--danger-soft); }
+.import-stat--danger strong { color: var(--danger-strong); }
+
+.import-errors {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--danger-soft);
+  color: var(--danger-strong);
+}
+
+.import-errors__title {
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.import-errors__list {
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.import-message {
+  margin-top: 14px;
+  text-align: center;
+  color: var(--text-2);
+  font-size: 13px;
+}
+</style>

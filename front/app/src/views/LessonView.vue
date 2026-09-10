@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { getChapter } from '../data/courses'
 import { useLearningStore } from '../stores/learning'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
+import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const learning = useLearningStore()
@@ -17,6 +18,12 @@ const completed = computed(() =>
     ? learning.isChapterCompleted(lesson.value.course.id, lesson.value.chapter.id)
     : false
 )
+
+const chapterIndex = computed(() =>
+  lesson.value ? lesson.value.course.chapters.findIndex((ch) => ch.id === lesson.value.chapter.id) : 0
+)
+
+const courseProgress = computed(() => (lesson.value ? learning.courseProgress(lesson.value.course.id) : 0))
 
 const noteDraft = ref('')
 const noteSaved = ref(false)
@@ -48,8 +55,13 @@ function saveNote() {
   <div class="lesson" v-if="lesson">
     <aside class="lesson__toc card">
       <router-link :to="`/courses/${lesson.course.id}`" class="lesson__course">
-        {{ lesson.course.icon }} {{ lesson.course.title }}
+        <span class="lesson__course-icon">{{ lesson.course.icon }}</span>
+        <span class="lesson__course-text">
+          <strong>{{ lesson.course.title }}</strong>
+          <small>{{ learning.courseCompletedCount(lesson.course.id) }}/{{ lesson.course.chapters.length }} 章已完成</small>
+        </span>
       </router-link>
+      <div class="progress progress--thin lesson__course-progress"><i :style="{ width: courseProgress + '%', background: lesson.course.accent }"></i></div>
       <nav>
         <router-link
           v-for="(ch, i) in lesson.course.chapters"
@@ -60,41 +72,57 @@ function saveNote() {
         >
           <span
             class="lesson__toc-dot"
-            :class="{
-              'lesson__toc-dot--done': learning.isChapterCompleted(lesson.course.id, ch.id)
-            }"
+            :class="{ 'lesson__toc-dot--done': learning.isChapterCompleted(lesson.course.id, ch.id) }"
           >
-            {{ learning.isChapterCompleted(lesson.course.id, ch.id) ? '✓' : i + 1 }}
+            <Icon v-if="learning.isChapterCompleted(lesson.course.id, ch.id)" name="check" :size="11" :stroke="3" />
+            <template v-else>{{ i + 1 }}</template>
           </span>
-          {{ ch.title }}
+          <span class="lesson__toc-title">{{ ch.title }}</span>
         </router-link>
       </nav>
     </aside>
 
     <div class="lesson__main">
+      <div class="lesson__crumbs">
+        <router-link to="/courses">课程</router-link>
+        <Icon name="arrowRight" :size="12" />
+        <router-link :to="`/courses/${lesson.course.id}`">{{ lesson.course.title }}</router-link>
+        <Icon name="arrowRight" :size="12" />
+        <span>第 {{ chapterIndex + 1 }} 章</span>
+        <span class="lesson__crumbs-meta"><Icon name="clock" :size="12" /> 约 {{ lesson.chapter.minutes }} 分钟</span>
+      </div>
+
       <article class="lesson__content card fade-up" :key="lesson.chapter.id">
         <MarkdownRenderer :source="lesson.chapter.content" />
 
-        <div class="lesson__complete">
+        <div class="lesson__complete" :class="{ 'lesson__complete--done': completed }">
+          <div>
+            <strong>{{ completed ? '本章已完成' : '学完了吗？' }}</strong>
+            <span>{{ completed ? '点击可取消完成状态' : '标记完成后将计入课程进度与学习统计' }}</span>
+          </div>
           <button
             class="btn"
             :class="completed ? 'btn--ghost' : 'btn--primary'"
             @click="toggleCompleted"
           >
-            {{ completed ? '✓ 已完成本章（点击取消）' : '完成本章学习' }}
+            <Icon :name="completed ? 'check' : 'check'" :size="16" :stroke="3" />
+            {{ completed ? '已完成本章' : '完成本章学习' }}
           </button>
         </div>
       </article>
 
       <section class="lesson__notes card">
-        <h3>🗒️ 本章笔记</h3>
+        <div class="panel-head">
+          <div><h3><Icon name="note" :size="17" /> 本章笔记</h3><p>记录你的理解、疑问或延伸思考，保存在本地浏览器中</p></div>
+          <span v-if="noteSaved" class="tag tag--success"><Icon name="check" :size="12" :stroke="3" /> 已保存</span>
+        </div>
         <textarea
           v-model="noteDraft"
+          class="textarea"
           rows="5"
-          placeholder="记录你的理解、疑问或延伸思考…（笔记保存在本地浏览器中）"
+          placeholder="写点什么…"
         ></textarea>
         <div class="lesson__notes-actions">
-          <span v-if="noteSaved" class="lesson__notes-saved">✓ 已保存</span>
           <button class="btn btn--primary" @click="saveNote">保存笔记</button>
         </div>
       </section>
@@ -103,22 +131,22 @@ function saveNote() {
         <router-link
           v-if="lesson.prev"
           :to="`/courses/${lesson.course.id}/${lesson.prev.id}`"
-          class="lesson__pager-link card"
+          class="lesson__pager-link card card--hover"
         >
-          <span class="lesson__pager-dir">← 上一章</span>
+          <span class="lesson__pager-dir"><Icon name="arrowLeft" :size="13" /> 上一章</span>
           <span class="lesson__pager-title">{{ lesson.prev.title }}</span>
         </router-link>
         <span v-else></span>
         <router-link
           v-if="lesson.next"
           :to="`/courses/${lesson.course.id}/${lesson.next.id}`"
-          class="lesson__pager-link lesson__pager-link--next card"
+          class="lesson__pager-link lesson__pager-link--next card card--hover"
         >
-          <span class="lesson__pager-dir">下一章 →</span>
+          <span class="lesson__pager-dir">下一章 <Icon name="arrowRight" :size="13" /></span>
           <span class="lesson__pager-title">{{ lesson.next.title }}</span>
         </router-link>
-        <router-link v-else to="/quiz" class="lesson__pager-link lesson__pager-link--next card">
-          <span class="lesson__pager-dir">课程完结 🎉</span>
+        <router-link v-else to="/quiz" class="lesson__pager-link lesson__pager-link--next lesson__pager-link--final card">
+          <span class="lesson__pager-dir">课程完结 <Icon name="trophy" :size="13" /></span>
           <span class="lesson__pager-title">去做课程测验</span>
         </router-link>
       </nav>
@@ -126,8 +154,9 @@ function saveNote() {
   </div>
 
   <div class="page" v-else>
-    <div class="card" style="padding: 48px; text-align: center">
-      <p>未找到该章节。</p>
+    <div class="empty-state card">
+      <div class="empty-state__icon"><Icon name="alert" :size="30" /></div>
+      <h2>未找到该章节</h2>
       <router-link to="/courses" class="btn btn--primary">返回课程列表</router-link>
     </div>
   </div>
@@ -136,16 +165,16 @@ function saveNote() {
 <style scoped>
 .lesson {
   display: flex;
-  gap: 22px;
-  max-width: 1240px;
+  gap: 24px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 28px 32px 64px;
+  padding: 32px 36px 72px;
   align-items: flex-start;
 }
 
 .lesson__toc {
-  width: 256px;
-  min-width: 256px;
+  width: 272px;
+  min-width: 272px;
   padding: 18px 14px;
   position: sticky;
   top: 24px;
@@ -154,25 +183,57 @@ function saveNote() {
 }
 
 .lesson__course {
-  display: block;
-  font-size: 14px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px 12px;
   color: var(--text);
-  padding: 4px 10px 14px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 10px;
+}
+
+.lesson__course-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  font-size: 20px;
+}
+
+.lesson__course-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.lesson__course-text strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lesson__course-text small {
+  color: var(--text-3);
+  font-size: 11.5px;
+}
+
+.lesson__course-progress {
+  margin: 0 6px 14px;
 }
 
 .lesson__toc-item {
   display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  font-size: 13.5px;
   color: var(--text-2);
-  line-height: 1.4;
-  transition: background 0.15s ease;
+  line-height: 1.45;
+  transition: background var(--t-fast);
 }
 
 .lesson__toc-item:hover {
@@ -181,28 +242,32 @@ function saveNote() {
 
 .lesson__toc-item--active {
   background: var(--primary-soft);
-  color: var(--primary-strong);
+  color: var(--primary-deep);
   font-weight: 600;
 }
 
 .lesson__toc-dot {
-  width: 21px;
-  height: 21px;
-  min-width: 21px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  margin-top: 1px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--surface-3);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.lesson__toc-item--active .lesson__toc-dot {
+  background: var(--primary);
+  color: #fff;
 }
 
 .lesson__toc-dot--done {
-  background: var(--success-soft);
-  border-color: var(--success);
-  color: var(--success);
+  background: var(--success) !important;
+  color: #fff !important;
 }
 
 .lesson__main {
@@ -210,42 +275,76 @@ function saveNote() {
   min-width: 0;
 }
 
+.lesson__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.lesson__crumbs a {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+.lesson__crumbs a:hover {
+  color: var(--primary);
+}
+
+.lesson__crumbs-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .lesson__content {
-  padding: 36px 42px;
+  padding: 40px 48px;
+  border-radius: var(--radius-lg);
 }
 
 .lesson__complete {
-  margin-top: 32px;
-  padding-top: 22px;
-  border-top: 1px solid var(--border);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 40px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.lesson__complete--done {
+  background: var(--success-soft);
+  border-color: #bfeedd;
+}
+
+.lesson__complete div {
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson__complete strong {
+  font-size: 15px;
+}
+
+.lesson__complete span {
+  color: var(--text-3);
+  font-size: 13px;
 }
 
 .lesson__notes {
   margin-top: 20px;
-  padding: 22px 26px;
+  padding: 24px 26px;
 }
 
 .lesson__notes h3 {
-  margin: 0 0 12px;
-  font-size: 15.5px;
-}
-
-.lesson__notes textarea {
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  font-family: inherit;
-  font-size: 14px;
-  line-height: 1.7;
-  resize: vertical;
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.lesson__notes textarea:focus {
-  border-color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .lesson__notes-actions {
@@ -253,13 +352,7 @@ function saveNote() {
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  margin-top: 10px;
-}
-
-.lesson__notes-saved {
-  color: var(--success);
-  font-size: 13px;
-  font-weight: 600;
+  margin-top: 12px;
 }
 
 .lesson__pager {
@@ -272,15 +365,10 @@ function saveNote() {
 .lesson__pager-link {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  padding: 14px 20px;
-  max-width: 46%;
+  gap: 4px;
+  padding: 16px 20px;
+  max-width: 48%;
   color: var(--text);
-  transition: transform 0.15s ease;
-}
-
-.lesson__pager-link:hover {
-  transform: translateY(-2px);
 }
 
 .lesson__pager-link--next {
@@ -288,13 +376,31 @@ function saveNote() {
   margin-left: auto;
 }
 
+.lesson__pager-link--final {
+  color: #fff;
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary-strong));
+  box-shadow: var(--shadow-primary);
+}
+
 .lesson__pager-dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   color: var(--text-3);
 }
 
+.lesson__pager-link--next .lesson__pager-dir {
+  justify-content: flex-end;
+}
+
+.lesson__pager-link--final .lesson__pager-dir {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .lesson__pager-title {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
 }
 
@@ -313,6 +419,15 @@ function saveNote() {
 
   .lesson__content {
     padding: 24px 20px;
+  }
+
+  .lesson__complete {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .lesson__crumbs-meta {
+    display: none;
   }
 }
 </style>

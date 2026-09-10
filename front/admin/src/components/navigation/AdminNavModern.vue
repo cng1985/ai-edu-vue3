@@ -65,43 +65,42 @@ function isActive(item) {
 
 <style scoped>
 .admin-modern-nav {
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
 }
 
 .admin-modern-nav__inner {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 16px;
-  min-height: 44px;
+  padding: 8px 24px;
 }
 
 .admin-modern-nav__group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   padding: 8px 14px;
   border: none;
-  border-radius: 8px;
+  border-radius: 11px;
   background: transparent;
   font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
+  font-weight: 600;
+  color: var(--text-3);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all var(--t-fast);
 }
 
 .admin-modern-nav__group:hover {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-3);
+  color: var(--text);
 }
 
 .admin-modern-nav__group--active {
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  color: #4f46e5;
-  font-weight: 600;
+  background: var(--primary-soft);
+  color: var(--primary-deep);
 }
 
 .admin-modern-nav__arrow {
@@ -110,9 +109,9 @@ function isActive(item) {
 }
 
 :deep(.el-dropdown-menu__item.is-active) {
-  color: #4f46e5;
-  font-weight: 600;
-  background: #eef2ff;
+  color: var(--primary-deep);
+  font-weight: 700;
+  background: var(--primary-soft);
 }
 
 :deep(.el-dropdown-menu__item .el-icon) {
