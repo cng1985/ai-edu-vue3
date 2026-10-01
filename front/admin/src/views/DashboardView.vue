@@ -153,7 +153,7 @@
 import { ref, computed, onMounted } from 'vue'
 import {
   Refresh, User, UserFilled, Avatar, CircleCheck, Reading, Promotion, Document, Notebook,
-  Collection, DocumentChecked, EditPen, ArrowRight, Service, Cpu
+  Collection, DocumentChecked, EditPen, ArrowRight, Service, Cpu, TrendCharts, Guide, Suitcase
 } from '@element-plus/icons-vue'
 import { dashboardApi } from '../api'
 import { useAuthStore } from '../stores/auth'
@@ -170,7 +170,7 @@ const today = new Date().toLocaleDateString('zh-CN', { month: 'long', day: 'nume
 
 const userCards = computed(() => [
   { label: '用户总数', value: stats.value?.userStats?.total || 0, icon: User, tone: 'primary', hint: '含全部角色' },
-  { label: '学员数', value: stats.value?.userStats?.learners || 0, icon: UserFilled, tone: 'success', hint: '学习端注册用户' },
+  { label: '学习者', value: stats.value?.userStats?.learners || 0, icon: UserFilled, tone: 'success', hint: '学习端注册用户' },
   { label: '管理 / 运营', value: stats.value?.userStats?.admins || 0, icon: Avatar, tone: 'info', hint: '后台账号' },
   { label: '活跃账号', value: stats.value?.userStats?.active || 0, icon: CircleCheck, tone: 'sky', hint: '状态为正常' }
 ])
@@ -202,11 +202,14 @@ function pct(v) {
 }
 
 const quickActions = computed(() => [
+  auth.hasPermission(PERM.DASHBOARD) && { path: '/eco/dashboard', title: '成长生态看板', desc: '知识生产到人才成长全链路', icon: TrendCharts, tone: 'primary' },
+  auth.hasPermission(PERM.ECO_MANAGE) && { path: '/eco/careers', title: '职业能力体系', desc: '职业、岗位、能力与技能要求', icon: Guide, tone: 'sky' },
+  auth.hasPermission(PERM.OPPORTUNITY_MANAGE) && { path: '/eco/market', title: 'IT 任务市场', desc: '企业任务与履约', icon: Suitcase, tone: 'warning' },
   auth.hasPermission(PERM.COURSE_READ) && { path: '/courses', title: '管理课程', desc: '新增、编辑与发布课程', icon: Reading, tone: 'primary' },
   auth.hasPermission(PERM.QUIZ_READ) && { path: '/quizzes', title: '管理题库', desc: '维护测验与题目', icon: EditPen, tone: 'sky' },
   auth.hasPermission(PERM.REVIEW_READ) && { path: '/reviews', title: '审核队列', desc: '处理待审核内容', icon: DocumentChecked, tone: 'warning' },
   auth.hasPermission(PERM.USER_READ) && { path: '/users', title: '用户管理', desc: '账号、角色与状态', icon: User, tone: 'success' },
-  auth.hasPermission(PERM.CUSTOMER_READ) && { path: '/customers', title: '客户咨询', desc: '实时回复学员工单', icon: Service, tone: 'rose' },
+  auth.hasPermission(PERM.CUSTOMER_READ) && { path: '/customers', title: '客户咨询', desc: '实时回复用户工单', icon: Service, tone: 'rose' },
   auth.hasPermission(PERM.AI_MODEL_READ) && { path: '/ai-models', title: '大模型配置', desc: '路由与厂商密钥', icon: Cpu, tone: 'ink' }
 ].filter(Boolean))
 

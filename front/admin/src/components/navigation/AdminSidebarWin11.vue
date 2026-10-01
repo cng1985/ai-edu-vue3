@@ -1,7 +1,7 @@
 <template>
   <aside class="admin-win11-nav">
     <div class="admin-win11-nav__rail">
-      <div class="admin-win11-nav__logo" title="AI 学习管理">
+      <div class="admin-win11-nav__logo" title="知航管理">
         <span>AI</span>
       </div>
 

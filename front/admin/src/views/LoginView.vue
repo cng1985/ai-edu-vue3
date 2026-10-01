@@ -8,7 +8,7 @@
       <div class="login__brand-top">
         <span class="login__logo">AI</span>
         <div>
-          <strong>AI 学习系统</strong>
+          <strong>知航 · 运营管理</strong>
           <span>Admin Console</span>
         </div>
       </div>

@@ -1,6 +1,6 @@
 <template>
   <div class="page">
-    <PageHeader eyebrow="用户管理" title="用户管理" subtitle="管理学员与后台账号，分配角色并控制启用状态。">
+    <PageHeader eyebrow="用户管理" title="用户管理" subtitle="管理学习者、创作者、企业与后台账号，分配角色并控制启用状态。">
       <el-button v-permission="PERM.USER_CREATE" type="primary" :icon="Plus" @click="openDialog()">新增用户</el-button>
     </PageHeader>
 
@@ -9,10 +9,7 @@
         <div class="toolbar">
           <el-input v-model="filters.keyword" placeholder="搜索用户名 / 昵称" clearable :prefix-icon="Search" style="width: 240px" @clear="loadData" @keyup.enter="loadData" />
           <el-select v-model="filters.role" placeholder="全部角色" clearable style="width: 140px" @change="loadData">
-            <el-option label="学员" value="learner" />
-            <el-option label="管理员" value="admin" />
-            <el-option label="审核员" value="reviewer" />
-            <el-option label="运营" value="operator" />
+            <el-option v-for="(label, value) in roleMap" :key="value" :label="label" :value="value" />
           </el-select>
           <el-select v-model="filters.status" placeholder="全部状态" clearable style="width: 130px" @change="loadData">
             <el-option label="正常" value="active" />
@@ -94,10 +91,7 @@
         </el-form-item>
         <el-form-item label="角色" prop="role">
           <el-select v-model="form.role" style="width: 100%">
-            <el-option label="学员" value="learner" />
-            <el-option label="管理员" value="admin" />
-            <el-option label="审核员" value="reviewer" />
-            <el-option label="运营" value="operator" />
+            <el-option v-for="(label, value) in roleMap" :key="value" :label="label" :value="value" />
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -150,7 +144,7 @@ const formRules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
-const roleMap = { learner: '学员', admin: '管理员', reviewer: '审核员', operator: '运营' }
+const roleMap = { learner: '学习者', creator: '创作者', enterprise: '企业', admin: '管理员', reviewer: '审核员', operator: '运营' }
 function roleLabel(r) { return roleMap[r] || r }
 function roleTagType(r) {
   if (r === 'admin') return 'danger'

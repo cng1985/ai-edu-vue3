@@ -17,6 +17,74 @@ export const NAV_GROUPS = [
     ]
   },
   {
+    key: 'ecosystem',
+    title: '成长生态',
+    items: [
+      {
+        path: '/eco/dashboard',
+        name: 'eco-dashboard',
+        title: '生态看板',
+        icon: 'TrendCharts',
+        permission: PERM.DASHBOARD,
+        keywords: ['生态', '飞轮', '看板', 'ecosystem']
+      },
+      {
+        path: '/eco/careers',
+        name: 'eco-careers',
+        title: '职业能力体系',
+        icon: 'Guide',
+        permission: PERM.ECO_MANAGE,
+        keywords: ['职业', '岗位', '能力', 'career', 'role']
+      },
+      {
+        path: '/eco/knowledge',
+        name: 'eco-knowledge',
+        title: '技能与知识图谱',
+        icon: 'Share',
+        permission: PERM.ECO_MANAGE,
+        keywords: ['技能', '知识点', '图谱', 'skill', 'knowledge']
+      },
+      {
+        path: '/eco/projects',
+        name: 'eco-projects',
+        title: '项目实践',
+        icon: 'Files',
+        permission: PERM.ECO_MANAGE,
+        keywords: ['项目', '任务', '提交', 'project']
+      }
+    ]
+  },
+  {
+    key: 'talent',
+    title: '任务与人才',
+    items: [
+      {
+        path: '/eco/market',
+        name: 'eco-market',
+        title: 'IT 任务市场',
+        icon: 'Suitcase',
+        permission: PERM.OPPORTUNITY_MANAGE,
+        keywords: ['任务', '企业', '履约', 'market']
+      },
+      {
+        path: '/eco/talents',
+        name: 'eco-talents',
+        title: '人才库',
+        icon: 'Medal',
+        permission: PERM.TALENT_READ,
+        keywords: ['人才', '画像', 'talent']
+      },
+      {
+        path: '/eco/community',
+        name: 'eco-community',
+        title: '社区与知识资产',
+        icon: 'ChatLineSquare',
+        permission: PERM.COMMUNITY_MANAGE,
+        keywords: ['社区', '资产', '帖子', 'community']
+      }
+    ]
+  },
+  {
     key: 'users',
     title: '用户管理',
     items: [
@@ -77,20 +145,6 @@ export const NAV_GROUPS = [
     ]
   },
   {
-    key: 'documents',
-    title: '单据管理',
-    items: [
-      {
-        path: '/documents',
-        name: 'documents',
-        title: '单据管理',
-        icon: 'Ticket',
-        permission: PERM.DOCUMENT_READ,
-        keywords: ['单据', 'document']
-      }
-    ]
-  },
-  {
     key: 'knowledge',
     title: '知识库',
     items: [
@@ -115,6 +169,14 @@ export const NAV_GROUPS = [
         icon: 'ChatDotRound',
         permission: PERM.AI_CHAT,
         keywords: ['ChatGPT', '对话', '聊天', 'AI']
+      },
+      {
+        path: '/eco/kernel',
+        name: 'eco-kernel',
+        title: 'AI 学习内核',
+        icon: 'Connection',
+        permission: PERM.KERNEL_READ,
+        keywords: ['pipeline', 'agent', '内核', 'stage']
       },
       {
         path: '/ai-models',

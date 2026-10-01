@@ -95,40 +95,47 @@ export const customersApi = {
   updateStatus: (id, status) => api.put(`/customers/tickets/${id}/status`, { status })
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-export const documentsApi = {
-  list: (params) => api.get('/documents', { params }),
-  get: (id) => api.get(`/documents/${id}`),
-  create: (data) => api.post('/documents', data),
-  update: (id, data) => api.put(`/documents/${id}`, data),
-  remove: (id) => api.delete(`/documents/${id}`),
-  exportExcel: async (params) => {
-    const res = await api.get('/documents/export', { params, responseType: 'blob' })
-    const disposition = res.headers?.['content-disposition'] || ''
-    const match = disposition.match(/filename\*=UTF-8''(.+)/)
-    const filename = match ? decodeURIComponent(match[1]) : '单据导出.xlsx'
-    downloadBlob(res.data, filename)
-  },
-  downloadTemplate: async () => {
-    const res = await api.get('/documents/import/template', { responseType: 'blob' })
-    downloadBlob(res.data, '单据导入模板.xlsx')
-  },
-  importExcel: (file) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return api.post('/documents/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-  },
-  importProgress: (taskId) => api.get(`/documents/import/${taskId}/progress`)
+/** 成长生态治理 */
+export const ecoAdminApi = {
+  dashboard: () => api.get('/manage/dashboard'),
+  careers: () => api.get('/manage/careers'),
+  saveCareer: (data, id) => (id ? api.put(`/manage/careers/${id}`, data) : api.post('/manage/careers', data)),
+  removeCareer: (id) => api.delete(`/manage/careers/${id}`),
+  role: (id) => api.get(`/manage/roles/${id}`),
+  saveRole: (data, id) => (id ? api.put(`/manage/roles/${id}`, data) : api.post('/manage/roles', data)),
+  removeRole: (id) => api.delete(`/manage/roles/${id}`),
+  saveCapability: (data, id) => (id ? api.put(`/manage/capabilities/${id}`, data) : api.post('/manage/capabilities', data)),
+  removeCapability: (id) => api.delete(`/manage/capabilities/${id}`),
+  skills: () => api.get('/manage/skills'),
+  saveSkill: (data, id) => (id ? api.put(`/manage/skills/${id}`, data) : api.post('/manage/skills', data)),
+  removeSkill: (id) => api.delete(`/manage/skills/${id}`),
+  knowledge: () => api.get('/manage/knowledge'),
+  saveKnowledge: (data, id) => (id ? api.put(`/manage/knowledge/${id}`, data) : api.post('/manage/knowledge', data)),
+  removeKnowledge: (id) => api.delete(`/manage/knowledge/${id}`),
+  relations: () => api.get('/manage/relations'),
+  addRelation: (data) => api.post('/manage/relations', data),
+  removeRelation: (id) => api.delete(`/manage/relations/${id}`),
+  chapterMappings: (courseId) => api.get('/manage/chapter-knowledge', { params: { courseId } }),
+  setChapterKnowledge: (courseId, chapterId, knowledgeIds) => api.put(`/manage/chapter-knowledge/${courseId}/${chapterId}`, { knowledgeIds }),
+  projects: () => api.get('/manage/projects'),
+  project: (id) => api.get(`/manage/projects/${id}`),
+  saveProject: (data, id) => (id ? api.put(`/manage/projects/${id}`, data) : api.post('/manage/projects', data)),
+  removeProject: (id) => api.delete(`/manage/projects/${id}`),
+  submissions: (params) => api.get('/manage/submissions', { params }),
+  opportunities: (params) => api.get('/manage/opportunities', { params }),
+  updateOpportunity: (id, data) => api.put(`/manage/opportunities/${id}`, data),
+  removeOpportunity: (id) => api.delete(`/manage/opportunities/${id}`),
+  candidates: (id) => api.get(`/manage/opportunities/${id}/candidates`),
+  decide: (applicationId, data) => api.post(`/manage/applications/${applicationId}/decision`, data),
+  talents: (keyword) => api.get('/manage/talents', { params: { keyword } }),
+  talent: (id) => api.get(`/manage/talents/${id}`),
+  posts: (params) => api.get('/manage/posts', { params }),
+  removePost: (id) => api.delete(`/manage/posts/${id}`),
+  resources: (params) => api.get('/manage/resources', { params }),
+  removeResource: (id) => api.delete(`/manage/resources/${id}`),
+  kernelRuns: (params) => api.get('/manage/kernel/runs', { params }),
+  kernelStages: () => api.get('/manage/kernel/stages'),
+  agents: () => api.get('/manage/agents')
 }
 
 export { settingsApi } from './settings.js'
