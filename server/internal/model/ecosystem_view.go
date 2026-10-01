@@ -196,10 +196,10 @@ type ChapterRef struct {
 
 // RoleDetail 岗位详情：能力 → 技能要求，以及个人当前等级。
 type RoleDetail struct {
-	Career *Career              `json:"career"`
-	Role   *JobRole             `json:"role"`
-	Gap    *GapAnalysis         `json:"gap,omitempty"`
-	Skills map[string]Skill     `json:"skills"`
+	Career *Career          `json:"career"`
+	Role   *JobRole         `json:"role"`
+	Gap    *GapAnalysis     `json:"gap,omitempty"`
+	Skills map[string]Skill `json:"skills"`
 }
 
 // MatchView 人才与任务的匹配结果。
@@ -213,10 +213,10 @@ type MatchView struct {
 // OpportunityView 任务市场列表项。
 type OpportunityView struct {
 	Opportunity
-	Requirements    []SkillRequirement `json:"requirements"`
-	Match           *MatchView         `json:"match,omitempty"`
-	ApplicantCount  int                `json:"applicantCount"`
-	MyApplication   *OpportunityApplication `json:"myApplication,omitempty"`
+	Requirements   []SkillRequirement      `json:"requirements"`
+	Match          *MatchView              `json:"match,omitempty"`
+	ApplicantCount int                     `json:"applicantCount"`
+	MyApplication  *OpportunityApplication `json:"myApplication,omitempty"`
 }
 
 // OpportunityRequest 发布/编辑 IT 任务。
@@ -254,9 +254,9 @@ type ApplicationView struct {
 
 // CandidateView 任务推荐人才。
 type CandidateView struct {
-	User   UserBrief  `json:"user"`
-	Match  MatchView  `json:"match"`
-	Goal   string     `json:"goal"`
+	User   UserBrief        `json:"user"`
+	Match  MatchView        `json:"match"`
+	Goal   string           `json:"goal"`
 	Skills []SkillStateView `json:"skills"`
 }
 
@@ -351,16 +351,16 @@ type ResourceRequest struct {
 
 // FlywheelStats 个人成长飞轮：学习 → 实践 → 产出 → 收益 → 投资学习 → 更强能力。
 type FlywheelStats struct {
-	LearningEvents   int64   `json:"learningEvents"`
-	LearningMinutes  int     `json:"learningMinutes"`
-	MasteredCount    int     `json:"masteredCount"`
-	ProjectsPracticed int    `json:"projectsPracticed"`
-	Submissions      int     `json:"submissions"`
-	EvidenceCount    int     `json:"evidenceCount"`
-	TasksCompleted   int     `json:"tasksCompleted"`
-	Income           float64 `json:"income"`
-	Contributions    int     `json:"contributions"`
-	AvgSkillLevel    float64 `json:"avgSkillLevel"`
+	LearningEvents    int64   `json:"learningEvents"`
+	LearningMinutes   int     `json:"learningMinutes"`
+	MasteredCount     int     `json:"masteredCount"`
+	ProjectsPracticed int     `json:"projectsPracticed"`
+	Submissions       int     `json:"submissions"`
+	EvidenceCount     int     `json:"evidenceCount"`
+	TasksCompleted    int     `json:"tasksCompleted"`
+	Income            float64 `json:"income"`
+	Contributions     int     `json:"contributions"`
+	AvgSkillLevel     float64 `json:"avgSkillLevel"`
 }
 
 // ActivityDay 每日学习活跃度。
@@ -380,32 +380,32 @@ type ContributionStats struct {
 
 // TalentProfile 人才画像：比传统简历更准确的动态能力档案。
 type TalentProfile struct {
-	User          UserBrief             `json:"user"`
-	JoinedAt      int64                 `json:"joinedAt"`
-	Goal          *UserGoal             `json:"goal"`
-	GoalCareer    *Career               `json:"goalCareer,omitempty"`
-	GoalRole      *JobRole              `json:"goalRole,omitempty"`
-	Readiness     int                   `json:"readiness"`
-	Skills        []SkillStateView      `json:"skills"`
-	Knowledge     KnowledgeSummary      `json:"knowledge"`
-	Projects      []SubmissionView      `json:"projects"`
-	Tasks         []ApplicationView     `json:"tasks"`
-	Evidence      []Evidence            `json:"evidence"`
-	Contributions ContributionStats     `json:"contributions"`
-	Income        []IncomeRecord        `json:"income"`
-	TotalIncome   float64               `json:"totalIncome"`
-	Flywheel      FlywheelStats         `json:"flywheel"`
-	Activity      []ActivityDay         `json:"activity"`
+	User          UserBrief         `json:"user"`
+	JoinedAt      int64             `json:"joinedAt"`
+	Goal          *UserGoal         `json:"goal"`
+	GoalCareer    *Career           `json:"goalCareer,omitempty"`
+	GoalRole      *JobRole          `json:"goalRole,omitempty"`
+	Readiness     int               `json:"readiness"`
+	Skills        []SkillStateView  `json:"skills"`
+	Knowledge     KnowledgeSummary  `json:"knowledge"`
+	Projects      []SubmissionView  `json:"projects"`
+	Tasks         []ApplicationView `json:"tasks"`
+	Evidence      []Evidence        `json:"evidence"`
+	Contributions ContributionStats `json:"contributions"`
+	Income        []IncomeRecord    `json:"income"`
+	TotalIncome   float64           `json:"totalIncome"`
+	Flywheel      FlywheelStats     `json:"flywheel"`
+	Activity      []ActivityDay     `json:"activity"`
 }
 
 // KnowledgeSummary 知识掌握概况。
 type KnowledgeSummary struct {
-	Total        int     `json:"total"`
-	Mastered     int     `json:"mastered"`
-	Learning     int     `json:"learning"`
-	Due          int     `json:"due"`
-	AvgMastery   float64 `json:"avgMastery"`
-	ByDomain     []DomainMastery `json:"byDomain"`
+	Total      int             `json:"total"`
+	Mastered   int             `json:"mastered"`
+	Learning   int             `json:"learning"`
+	Due        int             `json:"due"`
+	AvgMastery float64         `json:"avgMastery"`
+	ByDomain   []DomainMastery `json:"byDomain"`
 }
 
 // DomainMastery 领域掌握度。
@@ -441,34 +441,34 @@ type GrowthOverview struct {
 
 // ProjectTaskRef 推荐的项目任务。
 type ProjectTaskRef struct {
-	ProjectID    string     `json:"projectId"`
-	ProjectTitle string     `json:"projectTitle"`
-	TaskID       string     `json:"taskId"`
-	TaskTitle    string     `json:"taskTitle"`
-	Match        MatchView  `json:"match"`
+	ProjectID    string    `json:"projectId"`
+	ProjectTitle string    `json:"projectTitle"`
+	TaskID       string    `json:"taskId"`
+	TaskTitle    string    `json:"taskTitle"`
+	Match        MatchView `json:"match"`
 }
 
 // EcoDashboard 管理端生态看板。
 type EcoDashboard struct {
-	Careers        int64            `json:"careers"`
-	Roles          int64            `json:"roles"`
-	Skills         int64            `json:"skills"`
-	Knowledge      int64            `json:"knowledge"`
-	Relations      int64            `json:"relations"`
-	Projects       int64            `json:"projects"`
-	Submissions    int64            `json:"submissions"`
-	Opportunities  int64            `json:"opportunities"`
-	OpenOpportunities int64         `json:"openOpportunities"`
-	Applications   int64            `json:"applications"`
-	CompletedTasks int64            `json:"completedTasks"`
-	Posts          int64            `json:"posts"`
-	Resources      map[string]int64 `json:"resources"`
-	Goals          int64            `json:"goals"`
-	LearningEvents int64            `json:"learningEvents"`
-	Evidence       int64            `json:"evidence"`
-	TotalIncome    float64          `json:"totalIncome"`
-	PipelineRuns   int64            `json:"pipelineRuns"`
-	LevelDistribution []int         `json:"levelDistribution"`
+	Careers           int64            `json:"careers"`
+	Roles             int64            `json:"roles"`
+	Skills            int64            `json:"skills"`
+	Knowledge         int64            `json:"knowledge"`
+	Relations         int64            `json:"relations"`
+	Projects          int64            `json:"projects"`
+	Submissions       int64            `json:"submissions"`
+	Opportunities     int64            `json:"opportunities"`
+	OpenOpportunities int64            `json:"openOpportunities"`
+	Applications      int64            `json:"applications"`
+	CompletedTasks    int64            `json:"completedTasks"`
+	Posts             int64            `json:"posts"`
+	Resources         map[string]int64 `json:"resources"`
+	Goals             int64            `json:"goals"`
+	LearningEvents    int64            `json:"learningEvents"`
+	Evidence          int64            `json:"evidence"`
+	TotalIncome       float64          `json:"totalIncome"`
+	PipelineRuns      int64            `json:"pipelineRuns"`
+	LevelDistribution []int            `json:"levelDistribution"`
 }
 
 // AgentInfo AI Agent 描述。

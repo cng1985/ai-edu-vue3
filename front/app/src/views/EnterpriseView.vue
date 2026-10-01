@@ -44,7 +44,8 @@ async function load() {
 async function select(id) {
   selectedId.value = id
   candidates.value = []
-  candidates.value = await enterpriseApi.candidates(id).catch(() => [])
+  const list = await enterpriseApi.candidates(id).catch(() => [])
+  if (selectedId.value === id) candidates.value = list
 }
 
 function openCreate() {

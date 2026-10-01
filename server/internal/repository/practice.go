@@ -126,7 +126,9 @@ func (r *MarketRepo) FindUserApplication(opportunityID, userID string) (*model.O
 	return &a, err
 }
 
-func (r *MarketRepo) SaveApplication(a *model.OpportunityApplication) error { return r.db.Save(a).Error }
+func (r *MarketRepo) SaveApplication(a *model.OpportunityApplication) error {
+	return r.db.Save(a).Error
+}
 
 func (r *MarketRepo) ListApplications(opportunityID, userID string) ([]model.OpportunityApplication, error) {
 	var list []model.OpportunityApplication

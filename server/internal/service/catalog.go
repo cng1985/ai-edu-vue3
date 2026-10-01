@@ -447,7 +447,9 @@ func (s *CatalogService) AdminListKnowledge() ([]AdminKnowledge, error) {
 	return out, nil
 }
 
-func (s *CatalogService) ListRelations() ([]model.KnowledgeRelation, error) { return s.repo.ListRelations() }
+func (s *CatalogService) ListRelations() ([]model.KnowledgeRelation, error) {
+	return s.repo.ListRelations()
+}
 
 func slugOr(id, prefix string) string {
 	id = strings.TrimSpace(id)

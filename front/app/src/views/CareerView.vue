@@ -45,10 +45,12 @@ async function load() {
 }
 
 async function loadRole() {
-  if (!roleId.value) return
+  const id = roleId.value
+  if (!id) return
   loading.value = true
   try {
-    detail.value = await ecoApi.role(roleId.value)
+    const res = await ecoApi.role(id)
+    if (roleId.value === id) detail.value = res
   } finally {
     loading.value = false
   }

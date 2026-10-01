@@ -24,12 +24,12 @@ type Career struct {
 
 // JobRole 岗位（与 RBAC 角色区分），例如高级 Java 工程师。
 type JobRole struct {
-	ID           string       `gorm:"primaryKey;size:64" json:"id"`
-	CareerID     string       `gorm:"index;size:64" json:"careerId"`
-	Name         string       `gorm:"size:100" json:"name"`
-	Level        string       `gorm:"size:20" json:"level"`
-	Description  string       `gorm:"type:text" json:"description"`
-	Sort         int          `json:"sort"`
+	ID           string           `gorm:"primaryKey;size:64" json:"id"`
+	CareerID     string           `gorm:"index;size:64" json:"careerId"`
+	Name         string           `gorm:"size:100" json:"name"`
+	Level        string           `gorm:"size:20" json:"level"`
+	Description  string           `gorm:"type:text" json:"description"`
+	Sort         int              `json:"sort"`
 	Capabilities []RoleCapability `gorm:"foreignKey:RoleID" json:"capabilities,omitempty"`
 }
 

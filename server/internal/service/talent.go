@@ -186,7 +186,7 @@ func (s *TalentService) Dashboard() model.EcoDashboard {
 		Careers: r.catalog.Count(&model.Career{}), Roles: r.catalog.Count(&model.JobRole{}),
 		Skills: r.catalog.Count(&model.Skill{}), Knowledge: r.catalog.Count(&model.KnowledgePoint{}),
 		Relations: r.catalog.Count(&model.KnowledgeRelation{}),
-		Projects: r.projects.Count(), Submissions: r.projects.CountSubmissions(),
+		Projects:  r.projects.Count(), Submissions: r.projects.CountSubmissions(),
 		Opportunities: r.market.CountByStatus(""), OpenOpportunities: r.market.CountByStatus(model.OpportunityOpen),
 		Applications: r.market.CountApplications(""), CompletedTasks: r.market.CountApplications(model.ApplicationCompleted),
 		Posts: r.community.CountPosts(), Resources: r.community.CountResourcesByType(),

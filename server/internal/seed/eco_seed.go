@@ -150,7 +150,9 @@ type taskDef struct {
 	Reqs                         []model.SkillRequirement
 }
 
-func r(skill string, level int) model.SkillRequirement { return model.SkillRequirement{SkillID: skill, Level: level} }
+func r(skill string, level int) model.SkillRequirement {
+	return model.SkillRequirement{SkillID: skill, Level: level}
+}
 
 var projectDefs = []struct {
 	ID, Title, Summary, Desc, Domain, Icon, Color string
@@ -347,19 +349,19 @@ func seedCommunity(d EcoDeps) error {
 	posts := []model.CommunityPost{
 		{ID: "post-volatile", AuthorID: "learner_demo", Type: model.PostQuestion, Title: "volatile 能保证原子性吗？count++ 为什么还是有问题？",
 			Content: "看了 JMM 的内容，知道 volatile 保证可见性，但用 volatile 修饰的 count 在多线程 count++ 后结果还是不对，是哪里理解错了？",
-			Tags: js([]string{"Java并发", "volatile"}), KnowledgeIDs: js([]string{"volatile", "cas", "jmm"}), Likes: 12, Views: 186, CreatedAt: at(30)},
+			Tags:    js([]string{"Java并发", "volatile"}), KnowledgeIDs: js([]string{"volatile", "cas", "jmm"}), Likes: 12, Views: 186, CreatedAt: at(30)},
 		{ID: "post-rag-recall", AuthorID: "talent_alice", Type: model.PostQuestion, Title: "RAG 召回率低，应该先优化切分还是检索？",
 			Content: "知识库问答经常找不到相关段落，测试集召回率只有 70% 左右。时间有限，优先优化切分策略还是检索策略？",
-			Tags: js([]string{"RAG", "检索"}), KnowledgeIDs: js([]string{"chunking", "hybrid-retrieval"}), Likes: 21, Views: 342, CreatedAt: at(52)},
+			Tags:    js([]string{"RAG", "检索"}), KnowledgeIDs: js([]string{"chunking", "hybrid-retrieval"}), Likes: 21, Views: 342, CreatedAt: at(52)},
 		{ID: "post-evidence", AuthorID: "creator_001", Type: model.PostArticle, Title: "从知识到技能：如何用项目证据证明你的能力",
 			Content: "很多同学刷了大量题目，却在面试和真实任务中表现一般。原因是：**知道 ≠ 会做**。\n\n## 三层证据\n\n1. 知识状态：掌握度与置信度\n2. 项目证据：可评审的方案与代码\n3. 任务表现：真实业务中的交付与评价\n\n平台的技能等级正是按这三层证据计算的：只有知识最多 L2，有了项目证据才能到 L3，真实任务表现优秀才能达到 L4、L5。\n\n建议每学完一个技能的核心知识，就立刻选一个项目任务练手。",
-			Tags: js([]string{"成长方法", "技能评价"}), KnowledgeIDs: js([]string{}), Likes: 48, Views: 913, CreatedAt: at(80)},
+			Tags:    js([]string{"成长方法", "技能评价"}), KnowledgeIDs: js([]string{}), Likes: 48, Views: 913, CreatedAt: at(80)},
 		{ID: "post-fe-to-ai", AuthorID: "talent_chen", Type: model.PostDiscussion, Title: "前端转 AI 应用开发，需要补哪些能力？",
 			Content: "目前 Vue 和 JS 比较熟，想往 AI 应用工程师方向发展，大家觉得应该先补 Python、RAG 还是 Prompt？",
-			Tags: js([]string{"转型", "AI应用"}), KnowledgeIDs: js([]string{"llm-basics", "prompt-structure"}), Likes: 9, Views: 128, CreatedAt: at(10)},
+			Tags:    js([]string{"转型", "AI应用"}), KnowledgeIDs: js([]string{"llm-basics", "prompt-structure"}), Likes: 9, Views: 128, CreatedAt: at(10)},
 		{ID: "post-first-income", AuthorID: "talent_bob", Type: model.PostShare, Title: "我的第一笔任务收入：支付对账服务开发复盘",
 			Content: "通过任务市场接到星云科技的对账服务开发，两周交付拿到 8000 元。复盘几点：\n\n- 先把需求中的边界条件列清楚（跨日、退款、重复回调）\n- 对账差异必须可追踪，我加了差异告警\n- 项目实践里做过的幂等与索引设计直接派上用场\n\n学习 → 实践 → 产出 → 收益，这个飞轮真的转起来了。",
-			Tags: js([]string{"任务复盘", "收入"}), KnowledgeIDs: js([]string{"mysql-index", "spring-rest"}), Likes: 35, Views: 520, CreatedAt: at(120)},
+			Tags:    js([]string{"任务复盘", "收入"}), KnowledgeIDs: js([]string{"mysql-index", "spring-rest"}), Likes: 35, Views: 520, CreatedAt: at(120)},
 	}
 	answers := []model.CommunityAnswer{
 		{ID: "ans-v1", PostID: "post-volatile", AuthorID: "talent_bob", Content: "volatile 只保证可见性和有序性，不保证原子性。count++ 实际是读取、加一、写回三步，两个线程可能同时读到相同的旧值。解决方案：用 AtomicInteger（基于 CAS）或者 synchronized。", Likes: 15, Accepted: true, CreatedAt: at(29)},
@@ -386,21 +388,21 @@ func seedCommunity(d EcoDeps) error {
 	}
 	resources := []model.KnowledgeResource{
 		{ID: "res-review-prompt", Type: "prompt", Title: "代码评审 Prompt 模板", Summary: "让大模型按正确性、可读性、性能、安全四个维度评审代码。",
-			Content: "```\n你是资深代码评审专家。请从以下维度评审 <code> 中的代码：\n1. 正确性：边界条件、空值、并发\n2. 可读性：命名、结构、注释\n3. 性能：复杂度、IO、缓存\n4. 安全：注入、越权、敏感信息\n输出格式：问题列表（严重程度/位置/建议）\n<code>{{code}}</code>\n```",
+			Content:  "```\n你是资深代码评审专家。请从以下维度评审 <code> 中的代码：\n1. 正确性：边界条件、空值、并发\n2. 可读性：命名、结构、注释\n3. 性能：复杂度、IO、缓存\n4. 安全：注入、越权、敏感信息\n输出格式：问题列表（严重程度/位置/建议）\n<code>{{code}}</code>\n```",
 			AuthorID: "creator_001", KnowledgeIDs: js([]string{"prompt-structure"}), SkillIDs: js([]string{"prompt-eng"}), Tags: js([]string{"Prompt", "代码评审"}), Likes: 32, Views: 410},
 		{ID: "res-slow-sql-sop", Type: "sop", Title: "线上慢查询排查 SOP", Summary: "从告警到根因定位的 6 步标准流程。",
-			Content: "1. 确认告警时间窗口与影响接口\n2. 从慢查询日志定位 Top SQL\n3. `EXPLAIN` 分析执行计划（type/key/rows/Extra）\n4. 检查索引失效：函数、隐式转换、前置模糊匹配\n5. 改写 SQL 或补充索引，在预发环境验证\n6. 回归压测并记录复盘",
+			Content:  "1. 确认告警时间窗口与影响接口\n2. 从慢查询日志定位 Top SQL\n3. `EXPLAIN` 分析执行计划（type/key/rows/Extra）\n4. 检查索引失效：函数、隐式转换、前置模糊匹配\n5. 改写 SQL 或补充索引，在预发环境验证\n6. 回归压测并记录复盘",
 			AuthorID: "creator_001", KnowledgeIDs: js([]string{"slow-query", "mysql-index"}), SkillIDs: js([]string{"mysql"}), Tags: js([]string{"MySQL", "SOP"}), Likes: 27, Views: 356},
 		{ID: "res-redis-lock", Type: "code", Title: "Redis 分布式锁安全释放 Lua 脚本", Summary: "compare-and-delete，防止误删他人持有的锁。",
-			Content: "```lua\nif redis.call('GET', KEYS[1]) == ARGV[1] then\n  return redis.call('DEL', KEYS[1])\nend\nreturn 0\n```",
+			Content:  "```lua\nif redis.call('GET', KEYS[1]) == ARGV[1] then\n  return redis.call('DEL', KEYS[1])\nend\nreturn 0\n```",
 			AuthorID: "talent_bob", KnowledgeIDs: js([]string{"distributed-lock"}), SkillIDs: js([]string{"redis"}), Tags: js([]string{"Redis", "分布式锁"}), Likes: 19, Views: 233},
 		{ID: "res-oversell-case", Type: "case", Title: "电商大促库存超卖事故复盘", Summary: "一次因缓存与数据库扣减不一致导致的超卖事故及改进方案。",
-			Content: "## 现象\n大促开始 3 分钟内某爆款超卖 214 件。\n\n## 根因\n先扣 Redis 再异步扣库，MQ 积压期间 Redis 预热脚本被重复执行，库存被重置。\n\n## 改进\n- 预热脚本加幂等标记\n- 库存扣减改为 Lua 原子扣减 + 事务消息\n- 增加实时对账告警",
+			Content:  "## 现象\n大促开始 3 分钟内某爆款超卖 214 件。\n\n## 根因\n先扣 Redis 再异步扣库，MQ 积压期间 Redis 预热脚本被重复执行，库存被重置。\n\n## 改进\n- 预热脚本加幂等标记\n- 库存扣减改为 Lua 原子扣减 + 事务消息\n- 增加实时对账告警",
 			AuthorID: "creator_001", KnowledgeIDs: js([]string{"distributed-lock", "cache-patterns", "distributed-transaction"}), SkillIDs: js([]string{"redis", "distributed"}), Tags: js([]string{"事故复盘", "高并发"}), Likes: 41, Views: 688},
 		{ID: "res-aqs-video", Type: "video", Title: "图解 AQS 原理（20 分钟）", Summary: "用动画讲清 state、CLH 队列与独占/共享模式。", URL: "https://www.bilibili.com/",
 			AuthorID: "creator_001", KnowledgeIDs: js([]string{"aqs", "cas"}), SkillIDs: js([]string{"java-concurrency"}), Tags: js([]string{"视频", "并发"}), Likes: 56, Views: 1203},
 		{ID: "res-rag-metrics", Type: "article", Title: "RAG 系统评估指标速查", Summary: "召回率、MRR、忠实度、答案相关性的定义与计算方法。",
-			Content: "| 指标 | 衡量什么 |\n| --- | --- |\n| Recall@K | 正确文档是否被召回 |\n| MRR | 正确文档排得是否靠前 |\n| 忠实度 | 回答是否基于检索内容 |\n| 答案相关性 | 是否回答了问题 |",
+			Content:  "| 指标 | 衡量什么 |\n| --- | --- |\n| Recall@K | 正确文档是否被召回 |\n| MRR | 正确文档排得是否靠前 |\n| 忠实度 | 回答是否基于检索内容 |\n| 答案相关性 | 是否回答了问题 |",
 			AuthorID: "talent_alice", KnowledgeIDs: js([]string{"llm-eval", "hybrid-retrieval"}), SkillIDs: js([]string{"rag", "ai-app-dev"}), Tags: js([]string{"RAG", "评估"}), Likes: 23, Views: 301},
 		{ID: "res-course-prompt", Type: "course", Title: "提示词工程入门（课程）", Summary: "平台精品课程：从结构化提示词到 Few-shot 与注入防御。", URL: "#/courses/prompt-engineering",
 			AuthorID: "creator_001", KnowledgeIDs: js([]string{"prompt-structure", "few-shot"}), SkillIDs: js([]string{"prompt-eng"}), Tags: js([]string{"课程"}), Likes: 64, Views: 1520},

@@ -183,7 +183,7 @@ async function load() {
 async function selectRole(id) {
   roleId.value = id
   const res = await ecoAdminApi.role(id)
-  role.value = res.role
+  if (roleId.value === id) role.value = res.role
 }
 
 function openCareer(c) {

@@ -177,7 +177,7 @@ onMounted(load)
 .pd__desc { margin: 0 0 16px; color: var(--text-2); }
 .req { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px; }
 .result { display: flex; gap: 22px; border-color: var(--primary-soft-2); }
-.result__score { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 110px; padding: 12px; border-radius: 16px; background: var(--primary-soft); }
+.result__score { display: flex; flex-direction: column; align-items: center; justify-content: center; align-self: flex-start; min-width: 110px; padding: 16px 12px; border-radius: 16px; background: var(--primary-soft); }
 .result__score strong { font-size: 40px; color: var(--primary-strong); line-height: 1.1; }
 .result__score small { color: var(--text-3); font-size: 12px; }
 .result__body { flex: 1; min-width: 0; }
