@@ -7,15 +7,15 @@ defineProps({
 })
 
 const highlights = [
-  { icon: 'compass', title: 'AI 职业规划', desc: '3 步确认方向，自动拆解能力图谱与里程碑' },
-  { icon: 'zap', title: '5 分钟微学习', desc: '引入 → 讲解 → 快测 → 回顾，一次掌握一个知识点' },
-  { icon: 'chart', title: '达成度评估', desc: '能力雷达、成长趋势与 AI 阶段复盘' }
+  { icon: 'compass', title: '职业 → 能力 → 技能', desc: '选择目标岗位，AI 分析你与岗位要求的技能差距' },
+  { icon: 'brain', title: '知识图谱与 AI 伙伴', desc: '按前置关系学习，六个 Agent 陪伴规划、讲解与评审' },
+  { icon: 'target', title: '项目实践与真实任务', desc: '用项目证据与企业任务证明能力，获得真实收益' }
 ]
 
 const stats = [
-  { value: '18', label: '结构化章节' },
-  { value: '8', label: '微学习单元' },
-  { value: '4', label: '能力域图谱' }
+  { value: '45', label: '知识点图谱' },
+  { value: '19', label: '技能模型' },
+  { value: '6', label: 'AI Agent' }
 ]
 </script>
 
@@ -25,21 +25,21 @@ const stats = [
       <ParticleField />
       <div class="auth__brand-inner">
         <router-link to="/login" class="auth__logo">
-          <span class="auth__mark"><Icon name="brain" :size="20" :stroke="2.2" /></span>
-          <span class="auth__brand-name">AI 学习系统</span>
+          <span class="auth__mark"><Icon name="compass" :size="20" :stroke="2.2" /></span>
+          <span class="auth__brand-name">知航</span>
         </router-link>
 
         <div class="auth__copy">
-          <span class="auth__eyebrow">目标驱动 · AI 辅助 · 数据评估</span>
+          <span class="auth__eyebrow">AI 时代个人成长操作系统</span>
           <h1>
-            {{ mode === 'register' ? '加入学习社区' : '把学习目标' }}<br />
-            <em>{{ mode === 'register' ? '把知识真正学透' : '变成可验证的成长' }}</em>
+            {{ mode === 'register' ? '加入知识工作生态' : '学习、实践、工作' }}<br />
+            <em>{{ mode === 'register' ? '让能力持续增值' : '持续提升个人价值' }}</em>
           </h1>
           <p>
             {{
               mode === 'register'
-                ? '注册后同步学习进度、笔记与测验成绩，与同路人一起推进职业目标。'
-                : '从职业目标出发，AI 拆解学习路径，用微单元与快测持续验证掌握度。'
+                ? '注册后形成你的人才画像：学习数据、项目证据、任务表现与收入，共同证明你的能力。'
+                : '从职业目标出发，AI 规划学习，社区交流与项目实践把知识变成能力，再通过真实任务获得收益。'
             }}
           </p>
         </div>
@@ -93,7 +93,7 @@ const stats = [
           <slot />
         </div>
 
-        <p class="auth__foot">演示环境 · 账号仅保存在本机浏览器 · 请勿使用真实密码</p>
+        <p class="auth__foot">演示环境 · 请勿使用真实密码</p>
       </div>
     </section>
   </div>

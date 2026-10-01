@@ -1,10 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useLearningStore } from '../stores/learning'
 import { useAuthStore } from '../stores/auth'
 import { useGrowthStore } from '../stores/growth'
 import { PERM } from '../constants/permissions'
+import { ROLE_NAMES } from '../utils/eco'
+import { BRAND } from '../router'
 import Icon from './Icon.vue'
 
 defineProps({
@@ -13,40 +14,60 @@ defineProps({
 const emit = defineEmits(['navigate'])
 
 const router = useRouter()
-const learning = useLearningStore()
 const auth = useAuthStore()
 const growth = useGrowthStore()
 
 function logout() {
   auth.logout()
+  growth.reset()
   emit('navigate')
   router.replace('/login')
 }
 
 const navGroups = [
   {
-    title: '目标成长',
+    title: '个人成长',
     items: [
-      { to: '/', icon: 'home', label: '学习驾驶舱', exact: true },
-      { to: '/career', icon: 'compass', label: '职业与目标' },
-      { to: '/path', icon: 'map', label: '学习路径' },
-      { to: '/review', icon: 'refresh', label: '复习与补强' }
+      { to: '/', icon: 'home', label: '成长中心', exact: true, permission: PERM.ECO_READ, hideFor: ['enterprise'] },
+      { to: '/career', icon: 'compass', label: '职业与能力', permission: PERM.ECO_READ },
+      { to: '/profile', icon: 'user', label: '我的人才画像', permission: PERM.GROWTH_WRITE }
     ]
   },
   {
-    title: '课程与练习',
+    title: '知识学习',
     items: [
-      { to: '/courses', icon: 'book', label: '全部课程', permission: PERM.COURSE_READ },
-      { to: '/quiz', icon: 'clipboard', label: '知识测验', permission: PERM.QUIZ_READ },
-      { to: '/chat', icon: 'sparkles', label: 'AI 学习助手', permission: PERM.AI_CHAT },
+      { to: '/knowledge', icon: 'brain', label: '知识图谱', permission: PERM.ECO_READ },
+      { to: '/courses', icon: 'book', label: '课程学习', permission: PERM.COURSE_READ },
+      { to: '/quiz', icon: 'clipboard', label: '知识测验', permission: PERM.QUIZ_READ }
+    ]
+  },
+  {
+    title: 'AI 内核',
+    items: [
+      { to: '/kernel', icon: 'layers', label: 'AI 学习内核', permission: PERM.AI_CHAT, hideFor: ['enterprise'] },
+      { to: '/agents', icon: 'sparkles', label: 'AI 伙伴', permission: PERM.AI_CHAT }
+    ]
+  },
+  {
+    title: '实践与机会',
+    items: [
+      { to: '/projects', icon: 'code', label: '项目实践', permission: PERM.ECO_READ, hideFor: ['enterprise'] },
+      { to: '/market', icon: 'target', label: '任务市场', permission: PERM.ECO_READ }
+    ]
+  },
+  {
+    title: '企业服务',
+    items: [
+      { to: '/enterprise', icon: 'trophy', label: '企业工作台', permission: PERM.OPPORTUNITY_PUBLISH },
+      { to: '/talents', icon: 'users', label: '人才库', permission: PERM.TALENT_READ }
+    ]
+  },
+  {
+    title: '知识社区',
+    items: [
+      { to: '/community', icon: 'message', label: '知识社区', permission: PERM.ECO_READ },
+      { to: '/resources', icon: 'note', label: '知识资产', permission: PERM.ECO_READ },
       { to: '/support', icon: 'headset', label: '客户咨询', permission: PERM.CUSTOMER_CHAT }
-    ]
-  },
-  {
-    title: '数据与激励',
-    items: [
-      { to: '/stats', icon: 'chart', label: '达成度报告' },
-      { to: '/incentives', icon: 'medal', label: '成长激励' }
     ]
   }
 ]
@@ -55,23 +76,39 @@ const visibleGroups = computed(() =>
   navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.permission || auth.hasPermission(item.permission))
+      items: group.items.filter(
+        (item) => (!item.permission || auth.hasPermission(item.permission)) && !item.hideFor?.includes(auth.user?.role)
+      )
     }))
     .filter((group) => group.items.length)
 )
 
-const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.overallProgress))
+const showProgress = computed(() => growth.hasGoal && auth.user?.role !== 'enterprise')
+
+function isActive(item, path) {
+  if (item.exact) return path === item.to
+  return path === item.to || path.startsWith(item.to + '/')
+}
+
+function loadGrowth() {
+  if (auth.isLoggedIn && auth.hasPermission(PERM.ECO_READ) && auth.user?.role !== 'enterprise' && !growth.overview) {
+    growth.refresh()
+  }
+}
+
+onMounted(loadGrowth)
+watch(() => auth.user?.id, loadGrowth)
 </script>
 
 <template>
   <aside class="sidebar" :class="{ 'sidebar--open': open }">
     <router-link to="/" class="sidebar__brand" @click="$emit('navigate')">
       <span class="sidebar__logo">
-        <Icon name="brain" :size="20" :stroke="2.2" />
+        <Icon name="compass" :size="20" :stroke="2.2" />
       </span>
       <span class="sidebar__brand-text">
-        <strong>AI 学习系统</strong>
-        <small>目标驱动 · 数据评估</small>
+        <strong>{{ BRAND }}</strong>
+        <small>AI 时代个人成长操作系统</small>
       </span>
     </router-link>
 
@@ -83,11 +120,7 @@ const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.
           :key="item.to"
           :to="item.to"
           class="sidebar__link"
-          :class="{
-            'sidebar__link--active': item.exact
-              ? $route.path === item.to
-              : $route.path.startsWith(item.to)
-          }"
+          :class="{ 'sidebar__link--active': isActive(item, $route.path) }"
           @click="$emit('navigate')"
         >
           <Icon :name="item.icon" :size="18" />
@@ -97,15 +130,15 @@ const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.
     </nav>
 
     <div class="sidebar__footer">
-      <div class="sidebar__progress">
+      <router-link v-if="showProgress" to="/career" class="sidebar__progress" @click="$emit('navigate')">
         <div class="sidebar__progress-label">
-          <span>{{ growth.hasGoal ? '目标达成度' : '课程进度' }}</span>
-          <strong class="num">{{ progress }}%</strong>
+          <span>{{ growth.roleName }}</span>
+          <strong class="num">{{ growth.readiness }}%</strong>
         </div>
         <div class="sidebar__progress-track">
-          <div class="sidebar__progress-fill" :style="{ width: progress + '%' }"></div>
+          <div class="sidebar__progress-fill" :style="{ width: growth.readiness + '%' }"></div>
         </div>
-      </div>
+      </router-link>
 
       <div v-if="auth.user" class="sidebar__user">
         <span
@@ -119,7 +152,7 @@ const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.
             {{ auth.user.nickname }}
             <em v-if="auth.isGuest" class="sidebar__guest-badge">游客</em>
           </strong>
-          <span>{{ auth.isGuest ? '临时体验账号' : '@' + auth.user.username }}</span>
+          <span>{{ auth.isGuest ? '临时体验账号' : (ROLE_NAMES[auth.user.role] || '') + ' · @' + auth.user.username }}</span>
         </div>
         <button class="sidebar__logout" :title="auth.isGuest ? '结束体验' : '退出登录'" @click="logout">
           <Icon name="logout" :size="16" />
@@ -131,7 +164,7 @@ const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.
         class="sidebar__upgrade"
         @click="$emit('navigate')"
       >
-        注册账号，保存学习进度
+        注册账号，开启成长飞轮
         <Icon name="arrowRight" :size="14" />
       </router-link>
     </div>
@@ -276,11 +309,13 @@ const progress = computed(() => (growth.hasGoal ? growth.achievement : learning.
 }
 
 .sidebar__progress {
+  display: block;
   padding: 0 4px;
 }
 
 .sidebar__progress-label {
   display: flex;
+  gap: 8px;
   justify-content: space-between;
   align-items: baseline;
   font-size: 12px;
