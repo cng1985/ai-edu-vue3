@@ -32,7 +32,7 @@ async function submit() {
   try {
     await new Promise((r) => setTimeout(r, 320))
     const preset = AVATAR_PRESETS[avatarIndex.value]
-    auth.register({
+    await auth.register({
       username: username.value,
       nickname: nickname.value,
       password: password.value,

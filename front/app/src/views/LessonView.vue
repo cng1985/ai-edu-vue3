@@ -3,11 +3,15 @@ import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { getChapter } from '../data/courses'
 import { useLearningStore } from '../stores/learning'
+import { useAuthStore } from '../stores/auth'
+import { meApi } from '../api'
 import MarkdownRenderer from '../components/MarkdownRenderer.vue'
 import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const learning = useLearningStore()
+const auth = useAuthStore()
+const synced = ref([])
 
 const lesson = computed(() =>
   getChapter(route.params.courseId, route.params.chapterId)
@@ -40,8 +44,17 @@ watch(
   { immediate: true }
 )
 
-function toggleCompleted() {
-  learning.toggleChapterCompleted(lesson.value.course.id, lesson.value.chapter.id)
+async function toggleCompleted() {
+  const { course, chapter } = lesson.value
+  const wasCompleted = completed.value
+  learning.toggleChapterCompleted(course.id, chapter.id)
+  synced.value = []
+  if (wasCompleted || !auth.hasPermission('growth:write')) return
+  try {
+    synced.value = await meApi.completeChapter({ courseId: course.id, chapterId: chapter.id })
+  } catch {
+    synced.value = []
+  }
 }
 
 function saveNote() {
@@ -98,7 +111,11 @@ function saveNote() {
         <div class="lesson__complete" :class="{ 'lesson__complete--done': completed }">
           <div>
             <strong>{{ completed ? '本章已完成' : '学完了吗？' }}</strong>
-            <span>{{ completed ? '点击可取消完成状态' : '标记完成后将计入课程进度与学习统计' }}</span>
+            <span>{{ completed ? '点击可取消完成状态' : '标记完成后将同步到知识图谱中对应知识点的学习状态' }}</span>
+            <span v-if="synced.length" class="lesson__synced">
+              已更新知识状态：
+              <router-link v-for="k in synced" :key="k.knowledge.id" :to="`/knowledge/${k.knowledge.id}`">{{ k.knowledge.name }} {{ Math.round(k.mastery * 100) }}%</router-link>
+            </span>
           </div>
           <button
             class="btn"
@@ -316,6 +333,9 @@ function saveNote() {
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
+
+.lesson__synced { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.lesson__synced a { font-weight: 600; }
 
 .lesson__complete--done {
   background: var(--success-soft);

@@ -4,11 +4,15 @@ import { useRoute } from 'vue-router'
 import { getQuiz } from '../data/quizzes'
 import { getCourse } from '../data/courses'
 import { useLearningStore } from '../stores/learning'
+import { useAuthStore } from '../stores/auth'
+import { meApi } from '../api'
 import ProgressRing from '../components/ProgressRing.vue'
 import Icon from '../components/Icon.vue'
 
 const route = useRoute()
 const learning = useLearningStore()
+const auth = useAuthStore()
+const synced = ref([])
 
 const quiz = computed(() => getQuiz(route.params.quizId))
 const course = computed(() => (quiz.value ? getCourse(quiz.value.courseId) : null))
@@ -61,6 +65,13 @@ function submit() {
     [...answers.value]
   )
   window.scrollTo({ top: 0, behavior: 'smooth' })
+  synced.value = []
+  if (auth.hasPermission('growth:write')) {
+    meApi
+      .completeChapter({ courseId: quiz.value.courseId, correct: score.value, total: quiz.value.questions.length })
+      .then((list) => (synced.value = list))
+      .catch(() => {})
+  }
 }
 
 function retry() {
@@ -105,6 +116,10 @@ function optionClass(qIndex, optIndex) {
         <p>
           答对 <strong class="num">{{ score }}</strong> / {{ quiz.questions.length }} 题。
           {{ scorePercent < 80 && course ? '建议回顾课程后重新测验。' : '可以继续挑战其他课程的测验。' }}
+        </p>
+        <p v-if="synced.length" class="result__synced">
+          成绩已同步到知识图谱：
+          <router-link v-for="k in synced" :key="k.knowledge.id" :to="`/knowledge/${k.knowledge.id}`" class="chip">{{ k.knowledge.name }} {{ Math.round(k.mastery * 100) }}%</router-link>
         </p>
         <div class="result__actions">
           <button class="btn btn--primary" @click="retry"><Icon name="refresh" :size="15" /> 重新测验</button>
@@ -328,4 +343,5 @@ function optionClass(qIndex, optIndex) {
   .result { flex-direction: column; align-items: flex-start; }
   .progress-bar__dots { display: none; }
 }
+.result__synced { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 13px; }
 </style>

@@ -3,7 +3,8 @@ import {
   User,
   Reading,
   Service,
-  Ticket,
+  TrendCharts,
+  Medal,
   Collection,
   Setting,
   Cpu
@@ -14,7 +15,8 @@ export const GROUP_ICONS = {
   users: User,
   content: Reading,
   service: Service,
-  documents: Ticket,
+  ecosystem: TrendCharts,
+  talent: Medal,
   knowledge: Collection,
   ai: Cpu,
   system: Setting

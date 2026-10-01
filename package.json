@@ -2,7 +2,7 @@
   "name": "ai-learning-system",
   "version": "1.0.0",
   "private": true,
-  "description": "AI 学习系统 monorepo",
+  "description": "知航 · AI 教育知识工作生态 monorepo",
   "scripts": {
     "dev": "npm run dev --prefix front/app",
     "build": "npm run build --prefix front/app",

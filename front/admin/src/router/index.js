@@ -64,17 +64,19 @@ const routes = [
         meta: { title: '客户咨询', permissions: [PERM.CUSTOMER_READ] }
       },
       {
-        path: 'documents',
-        name: 'documents',
-        component: () => import('../views/DocumentsView.vue'),
-        meta: { title: '单据管理', permissions: [PERM.DOCUMENT_READ] }
-      },
-      {
         path: 'knowledge',
         name: 'knowledge',
         component: () => import('../views/KnowledgeView.vue'),
         meta: { title: '知识库管理', permissions: [PERM.KNOWLEDGE_READ] }
       },
+      { path: 'eco/dashboard', name: 'eco-dashboard', component: () => import('../views/eco/EcoDashboardView.vue'), meta: { title: '生态看板', permissions: [PERM.DASHBOARD] } },
+      { path: 'eco/careers', name: 'eco-careers', component: () => import('../views/eco/CareerAdminView.vue'), meta: { title: '职业能力体系', permissions: [PERM.ECO_MANAGE] } },
+      { path: 'eco/knowledge', name: 'eco-knowledge', component: () => import('../views/eco/KnowledgeAdminView.vue'), meta: { title: '技能与知识图谱', permissions: [PERM.ECO_MANAGE] } },
+      { path: 'eco/projects', name: 'eco-projects', component: () => import('../views/eco/ProjectAdminView.vue'), meta: { title: '项目实践', permissions: [PERM.ECO_MANAGE] } },
+      { path: 'eco/market', name: 'eco-market', component: () => import('../views/eco/MarketAdminView.vue'), meta: { title: 'IT 任务市场', permissions: [PERM.OPPORTUNITY_MANAGE] } },
+      { path: 'eco/talents', name: 'eco-talents', component: () => import('../views/eco/TalentAdminView.vue'), meta: { title: '人才库', permissions: [PERM.TALENT_READ] } },
+      { path: 'eco/community', name: 'eco-community', component: () => import('../views/eco/CommunityAdminView.vue'), meta: { title: '社区与知识资产', permissions: [PERM.COMMUNITY_MANAGE] } },
+      { path: 'eco/kernel', name: 'eco-kernel', component: () => import('../views/eco/KernelAdminView.vue'), meta: { title: 'AI 学习内核', permissions: [PERM.KERNEL_READ] } },
       {
         path: 'roles',
         name: 'roles',
@@ -122,7 +124,7 @@ router.beforeEach(async (to) => {
 })
 
 router.afterEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} - AI 学习管理` : 'AI 学习管理'
+  document.title = to.meta.title ? `${to.meta.title} - 知航管理` : '知航 · 运营管理'
 })
 
 export default router

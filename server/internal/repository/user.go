@@ -22,6 +22,21 @@ func (r *UserRepo) FindByID(id string) (*model.User, error) {
 	return &user, err
 }
 
+func (r *UserRepo) FindByIDs(ids []string) ([]model.User, error) {
+	var users []model.User
+	if len(ids) == 0 {
+		return users, nil
+	}
+	err := r.db.Where("id IN ?", ids).Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepo) ListByRoles(roles []string) ([]model.User, error) {
+	var users []model.User
+	err := r.db.Where("role IN ? AND status = ?", roles, model.UserStatusActive).Order("joined_at ASC").Find(&users).Error
+	return users, err
+}
+
 func (r *UserRepo) List(keyword, role, status string, page, pageSize int) ([]model.User, int64, error) {
 	q := r.db.Model(&model.User{})
 	if keyword != "" {
