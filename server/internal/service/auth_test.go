@@ -84,7 +84,7 @@ func TestLoginSuccess(t *testing.T) {
 	if res.Token == "" {
 		t.Error("应返回 token")
 	}
-	if res.User.Username != "alice" || res.User.RoleName != "学员" {
+	if res.User.Username != "alice" || res.User.RoleName != "学习者" {
 		t.Errorf("用户信息不正确: %+v", res.User)
 	}
 	if len(res.User.Permissions) == 0 {

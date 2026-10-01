@@ -75,7 +75,17 @@ func NewEngine(
 			ai.POST("/career/recommend", h.AI.CareerRecommend)
 			ai.POST("/goal/decompose", h.AI.GoalDecompose)
 			ai.POST("/learning/suggest", h.AI.LearningSuggest)
+
+			ai.GET("/agents", h.Kernel.Agents)
+			ai.GET("/agents/:code/context", h.Kernel.AgentContext)
+			ai.POST("/agents/:code/chat/stream", h.Kernel.AgentChatStream)
+			ai.GET("/kernel/stages", h.Kernel.Stages)
+			ai.GET("/kernel/runs", h.Kernel.MyRuns)
+			ai.POST("/kernel/run", perm(rbac.PermGrowthWrite), h.Kernel.Run)
+			ai.POST("/kernel/run/stream", perm(rbac.PermGrowthWrite), h.Kernel.RunStream)
 		}
+
+		registerEco(authed, h, perm)
 
 		// 学员端接口
 		app := authed.Group("/app")
@@ -229,19 +239,7 @@ func NewEngine(
 			customers.PUT("/tickets/:id/status", perm(rbac.PermCustomerReply), h.Customer.AdminUpdateStatus)
 		}
 
-		// 单据管理
-		documents := admin.Group("/documents", perm(rbac.PermDocumentRead))
-		{
-			documents.GET("", h.Document.List)
-			documents.GET("/export", perm(rbac.PermDocumentExport), h.Document.Export)
-			documents.GET("/import/template", perm(rbac.PermDocumentImport), h.Document.ExportTemplate)
-			documents.POST("/import", perm(rbac.PermDocumentImport), h.Document.Import)
-			documents.GET("/import/:taskId/progress", perm(rbac.PermDocumentImport), h.Document.ImportProgress)
-			documents.GET("/:id", h.Document.Get)
-			documents.POST("", perm(rbac.PermDocumentWrite), h.Document.Create)
-			documents.PUT("/:id", perm(rbac.PermDocumentWrite), h.Document.Update)
-			documents.DELETE("/:id", perm(rbac.PermDocumentDelete), h.Document.Delete)
-		}
+		registerEcoAdmin(admin, h, perm)
 	}
 
 	lc.Append(fx.Hook{
