@@ -12,7 +12,12 @@ var Module = fx.Provide(
 	NewRoleRepo,
 	NewSettingsRepo,
 	NewCustomerRepo,
-	NewDocumentRepo,
+	NewCatalogRepo,
+	NewGrowthRepo,
+	NewProjectRepo,
+	NewMarketRepo,
+	NewCommunityRepo,
+	NewKernelRepo,
 	NewKnowledgeRepo,
 	NewAiModelRepo,
 )

@@ -17,14 +17,14 @@ export const PERM = {
   AI_CHAT: 'ai:chat',
   CUSTOMER_READ: 'customer:read',
   CUSTOMER_REPLY: 'customer:reply',
-  DOCUMENT_READ: 'document:read',
-  DOCUMENT_WRITE: 'document:write',
-  DOCUMENT_DELETE: 'document:delete',
-  DOCUMENT_IMPORT: 'document:import',
-  DOCUMENT_EXPORT: 'document:export',
   KNOWLEDGE_READ: 'knowledge:read',
   KNOWLEDGE_MANAGE: 'knowledge:manage',
   SETTINGS_MANAGE: 'settings:manage',
   AI_MODEL_READ: 'ai_model:read',
-  AI_MODEL_MANAGE: 'ai_model:manage'
+  AI_MODEL_MANAGE: 'ai_model:manage',
+  ECO_MANAGE: 'eco:manage',
+  OPPORTUNITY_MANAGE: 'opportunity:manage',
+  TALENT_READ: 'talent:read',
+  COMMUNITY_MANAGE: 'community:manage',
+  KERNEL_READ: 'kernel:read'
 }

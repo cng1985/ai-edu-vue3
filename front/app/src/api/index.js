@@ -12,12 +12,25 @@ async function request(path, options = {}) {
       ...options.headers
     }
   })
-  const data = await res.json()
+  let data
+  try {
+    data = await res.json()
+  } catch {
+    throw new Error(`请求失败 (${res.status})`)
+  }
   if (data.code !== 0) {
     throw new Error(data.message || '请求失败')
   }
   return data.data
 }
+
+const get = (path, params) => {
+  const qs = params ? new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== '')) : null
+  return request(qs && String(qs) ? `${path}?${qs}` : path)
+}
+const post = (path, body) => request(path, { method: 'POST', body: JSON.stringify(body || {}) })
+const put = (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body || {}) })
+const del = (path) => request(path, { method: 'DELETE' })
 
 function authHeaders() {
   const token = localStorage.getItem(TOKEN_KEY)
@@ -27,10 +40,14 @@ function authHeaders() {
   }
 }
 
-async function consumeSSE(res, { onToken, onDone, onError }) {
+async function consumeSSE(res, handlers) {
   if (!res.ok) {
     const text = await res.text()
-    throw new Error(text || `请求失败 (${res.status})`)
+    let message = text
+    try {
+      message = JSON.parse(text).message || text
+    } catch { /* 非 JSON 错误体 */ }
+    throw new Error(message || `请求失败 (${res.status})`)
   }
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
@@ -51,73 +68,119 @@ async function consumeSSE(res, { onToken, onDone, onError }) {
       } catch {
         continue
       }
-      if (payload.type === 'token' && onToken) onToken(payload.content || '')
       if (payload.type === 'error') throw new Error(payload.message || 'AI 服务错误')
-      if (payload.type === 'done' && onDone) onDone(payload)
+      handlers[payload.type]?.(payload)
     }
   }
 }
 
+/**
+ * 发起 SSE 流式请求。handlers 以事件类型为键：token / stage / done / error。
+ * 返回取消函数。
+ */
+function stream(path, body, handlers = {}) {
+  const controller = new AbortController()
+  fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(body || {}),
+    signal: controller.signal
+  })
+    .then((res) => consumeSSE(res, handlers))
+    .catch((err) => {
+      if (err.name !== 'AbortError') handlers.error?.(err)
+    })
+  return () => controller.abort()
+}
+
 export const authApi = {
-  register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  login: (username, password) => request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
-  guest: () => request('/auth/guest', { method: 'POST' }),
-  me: () => request('/auth/me'),
-  permissions: () => request('/auth/permissions'),
-  refreshPermissions: () => request('/auth/permissions/refresh', { method: 'POST' })
+  register: (body) => post('/auth/register', body),
+  login: (username, password) => post('/auth/login', { username, password }),
+  guest: () => post('/auth/guest'),
+  me: () => get('/auth/me'),
+  permissions: () => get('/auth/permissions'),
+  refreshPermissions: () => post('/auth/permissions/refresh')
 }
 
 export const aiApi = {
-  config: () => request('/ai/config'),
-  chat: (question, history = []) =>
-    request('/ai/chat', { method: 'POST', body: JSON.stringify({ question, history }) }),
-  chatStream(question, history, handlers = {}) {
-    const controller = new AbortController()
-    const run = async () => {
-      const res = await fetch(`${API_BASE}/ai/chat/stream`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ question, history }),
-        signal: controller.signal
-      })
-      await consumeSSE(res, handlers)
-    }
-    run().catch((err) => {
-      if (err.name !== 'AbortError' && handlers.onError) handlers.onError(err)
-    })
-    return () => controller.abort()
-  },
-  careerInterview(message, history, handlers = {}) {
-    const controller = new AbortController()
-    const run = async () => {
-      const res = await fetch(`${API_BASE}/ai/career/interview`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify({ message, history }),
-        signal: controller.signal
-      })
-      await consumeSSE(res, handlers)
-    }
-    run().catch((err) => {
-      if (err.name !== 'AbortError' && handlers.onError) handlers.onError(err)
-    })
-    return () => controller.abort()
-  },
-  careerRecommend: (body) => request('/ai/career/recommend', { method: 'POST', body: JSON.stringify(body) }),
-  goalDecompose: (body) => request('/ai/goal/decompose', { method: 'POST', body: JSON.stringify(body) }),
-  learningSuggest: (body) => request('/ai/learning/suggest', { method: 'POST', body: JSON.stringify(body) })
+  config: () => get('/ai/config')
+}
+
+/** 职业体系、知识图谱、项目、任务市场、社区与知识资产 */
+export const ecoApi = {
+  careers: () => get('/eco/careers'),
+  role: (id) => get(`/eco/roles/${id}`),
+  skills: () => get('/eco/skills'),
+  graph: (skillId) => get('/eco/knowledge/graph', { skillId }),
+  knowledge: (id) => get(`/eco/knowledge/${id}`),
+  projects: () => get('/eco/projects'),
+  project: (id) => get(`/eco/projects/${id}`),
+  submit: (projectId, taskId, body) => post(`/eco/projects/${projectId}/tasks/${taskId}/submissions`, body),
+  opportunities: (params) => get('/eco/opportunities', params),
+  opportunity: (id) => get(`/eco/opportunities/${id}`),
+  apply: (id, message) => post(`/eco/opportunities/${id}/apply`, { message }),
+  posts: (params) => get('/eco/community/posts', params),
+  post: (id) => get(`/eco/community/posts/${id}`),
+  createPost: (body) => post('/eco/community/posts', body),
+  answer: (id, content) => post(`/eco/community/posts/${id}/answers`, { content }),
+  likePost: (id) => post(`/eco/community/posts/${id}/like`),
+  likeAnswer: (id) => post(`/eco/community/answers/${id}/like`),
+  acceptAnswer: (id) => post(`/eco/community/answers/${id}/accept`),
+  summarize: (id) => post(`/eco/community/posts/${id}/summarize`),
+  resources: (params) => get('/eco/resources', params),
+  resource: (id) => get(`/eco/resources/${id}`),
+  createResource: (body) => post('/eco/resources', body)
+}
+
+/** 个人成长数据 */
+export const meApi = {
+  overview: () => get('/me/overview'),
+  goal: () => get('/me/goal'),
+  setGoal: (body) => put('/me/goal', body),
+  gap: (roleId) => get('/me/gap', { roleId }),
+  skills: () => get('/me/skills'),
+  knowledgeStates: () => get('/me/knowledge-states'),
+  recommendations: (limit) => get('/me/recommendations', { limit }),
+  reviews: () => get('/me/reviews'),
+  profile: () => get('/me/profile'),
+  submissions: () => get('/me/submissions'),
+  applications: () => get('/me/applications'),
+  recordEvent: (body) => post('/me/events', body),
+  practice: (knowledgeId, answers) => post(`/me/knowledge/${knowledgeId}/practice`, { answers }),
+  completeChapter: (body) => post('/me/chapters/complete', body)
+}
+
+/** 企业：发布任务、处理申请、推荐人才 */
+export const enterpriseApi = {
+  published: () => get('/enterprise/opportunities'),
+  publish: (body) => post('/enterprise/opportunities', body),
+  update: (id, body) => put(`/enterprise/opportunities/${id}`, body),
+  remove: (id) => del(`/enterprise/opportunities/${id}`),
+  candidates: (id) => get(`/enterprise/opportunities/${id}/candidates`),
+  decide: (applicationId, body) => post(`/enterprise/applications/${applicationId}/decision`, body)
+}
+
+export const talentApi = {
+  list: (keyword) => get('/talents', { keyword }),
+  profile: (id) => get(`/talents/${id}`)
+}
+
+/** AI Learning Kernel 与 Agent */
+export const kernelApi = {
+  stages: () => get('/ai/kernel/stages'),
+  runs: () => get('/ai/kernel/runs'),
+  runStream: (question, handlers) => stream('/ai/kernel/run/stream', { question }, handlers),
+  agents: () => get('/ai/agents'),
+  agentContext: (code, message) => get(`/ai/agents/${code}/context`, { message }),
+  agentChat: (code, message, history, handlers) => stream(`/ai/agents/${code}/chat/stream`, { message, history }, handlers)
 }
 
 export const customerApi = {
-  listTickets: (params) => request('/app/support/tickets' + (params ? '?' + new URLSearchParams(params) : '')),
-  createTicket: (body) => request('/app/support/tickets', { method: 'POST', body: JSON.stringify(body) }),
-  getTicket: (id) => request(`/app/support/tickets/${id}`),
-  listMessages: (id, params) => {
-    const qs = params ? '?' + new URLSearchParams(params) : ''
-    return request(`/app/support/tickets/${id}/messages${qs}`)
-  },
-  sendMessage: (id, content) =>
-    request(`/app/support/tickets/${id}/messages`, { method: 'POST', body: JSON.stringify({ content }) })
+  listTickets: (params) => get('/app/support/tickets', params),
+  createTicket: (body) => post('/app/support/tickets', body),
+  getTicket: (id) => get(`/app/support/tickets/${id}`),
+  listMessages: (id, params) => get(`/app/support/tickets/${id}/messages`, params),
+  sendMessage: (id, content) => post(`/app/support/tickets/${id}/messages`, { content })
 }
 
 export function saveSession(token, user) {

@@ -64,7 +64,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { EditPen, Avatar, DocumentChecked, Promotion, User } from '@element-plus/icons-vue'
+import { EditPen, Avatar, DocumentChecked, Promotion, User, OfficeBuilding, MagicStick } from '@element-plus/icons-vue'
 import { rolesApi } from '../api/roles.js'
 import { useAuthStore } from '../stores/auth'
 import { PERM } from '../constants/permissions'
@@ -94,7 +94,7 @@ function permLabel(code) {
 }
 
 function roleIcon(role) {
-  return { admin: Avatar, reviewer: DocumentChecked, operator: Promotion }[role] || User
+  return { admin: Avatar, reviewer: DocumentChecked, operator: Promotion, enterprise: OfficeBuilding, creator: MagicStick }[role] || User
 }
 
 function ratio(role) {

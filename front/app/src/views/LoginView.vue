@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import AuthShell from '../components/AuthShell.vue'
+import { homeFor } from '../router'
 import Icon from '../components/Icon.vue'
 
 const router = useRouter()
@@ -17,7 +18,7 @@ const loading = ref(false)
 const guestLoading = ref(false)
 
 function redirectAfterAuth() {
-  router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : '/')
+  router.replace(typeof route.query.redirect === 'string' ? route.query.redirect : homeFor(auth))
 }
 
 async function submit() {
@@ -29,7 +30,7 @@ async function submit() {
   loading.value = true
   try {
     await new Promise((r) => setTimeout(r, 320))
-    auth.login(username.value, password.value)
+    await auth.login(username.value, password.value)
     redirectAfterAuth()
   } catch (e) {
     error.value = e.message
@@ -43,7 +44,7 @@ async function guestLogin() {
   guestLoading.value = true
   try {
     await new Promise((r) => setTimeout(r, 260))
-    auth.loginAsGuest()
+    await auth.loginAsGuest()
     redirectAfterAuth()
   } catch (e) {
     error.value = e.message || '游客登录失败'
@@ -109,7 +110,7 @@ async function guestLogin() {
       {{ guestLoading ? '进入中…' : '游客模式，先看看' }}
     </button>
 
-    <p class="hint">演示账号 <code>demo</code> / <code>demo123</code></p>
+    <p class="hint">演示账号：学习者 <code>demo</code> / <code>demo123</code> · 企业 <code>company</code> / <code>company123</code></p>
   </AuthShell>
 </template>
 
